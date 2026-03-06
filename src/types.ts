@@ -3,6 +3,7 @@ export interface User {
   name: string;
   farm_name: string;
   email: string;
+  pin_code: string;
   created_at: string;
 }
 
