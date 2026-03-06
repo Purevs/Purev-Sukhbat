@@ -15,6 +15,8 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     farm_name TEXT,
+    location TEXT,
+    phone TEXT,
     email TEXT UNIQUE,
     pin_code TEXT DEFAULT '0000',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -57,6 +59,16 @@ if (!hasPinCode) {
   db.exec("ALTER TABLE users ADD COLUMN pin_code TEXT DEFAULT '0000'");
 }
 
+const hasLocation = usersInfo.some(col => col.name === 'location');
+if (!hasLocation) {
+  db.exec("ALTER TABLE users ADD COLUMN location TEXT");
+}
+
+const hasPhone = usersInfo.some(col => col.name === 'phone');
+if (!hasPhone) {
+  db.exec("ALTER TABLE users ADD COLUMN phone TEXT");
+}
+
 // Migration: Add session if it doesn't exist
 const milkYieldsInfo = db.prepare("PRAGMA table_info(milk_yields)").all() as any[];
 const hasSession = milkYieldsInfo.some(col => col.name === 'session');
@@ -89,12 +101,12 @@ async function startServer() {
   });
 
   app.post("/api/users/register", (req, res) => {
-    const { name, farm_name, email, pin_code } = req.body;
+    const { name, farm_name, location, phone, email, pin_code } = req.body;
     try {
       const info = db.prepare(`
-        INSERT INTO users (name, farm_name, email, pin_code)
-        VALUES (?, ?, ?, ?)
-      `).run(name, farm_name, email, pin_code || '0000');
+        INSERT INTO users (name, farm_name, location, phone, email, pin_code)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(name, farm_name, location || null, phone || null, email, pin_code || '0000');
       const user = db.prepare("SELECT * FROM users WHERE id = ?").get(info.lastInsertRowid);
       res.json(user);
     } catch (err: any) {
@@ -216,20 +228,6 @@ async function startServer() {
     }
   });
 
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    app.use(express.static(path.join(__dirname, "dist")));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(__dirname, "dist", "index.html"));
-    });
-  }
-
   app.get("/api/reports/milk", (req, res) => {
     const { userId, startDate, endDate } = req.query;
     if (!userId) return res.status(400).json({ error: "userId required" });
@@ -260,6 +258,20 @@ async function startServer() {
       res.status(400).json({ error: err.message });
     }
   });
+
+  // Vite middleware for development
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    app.use(express.static(path.join(__dirname, "dist")));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(__dirname, "dist", "index.html"));
+    });
+  }
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);

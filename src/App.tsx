@@ -414,28 +414,29 @@ export default function App() {
   const totalAlerts = heatAlerts.length + birthAlerts.length;
 
   return (
-    <div className="min-h-screen bg-[#F5F5F0] text-[#141414] font-sans">
+    <div className="min-h-screen bg-olive-50 text-[#1a1a1a] font-sans selection:bg-olive-200">
       {/* Header */}
-      <header className="bg-white border-b border-[#141414]/10 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <header className="glass sticky top-0 z-30 border-b border-olive-100">
+        <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
             {view !== 'list' && view !== 'register' && view !== 'userSelect' && (
               <button 
                 onClick={() => {
                   setView('list');
                   setImagePreview(null);
                 }}
-                className="p-2 hover:bg-black/5 rounded-full transition-colors"
+                className="p-2 hover:bg-olive-100 rounded-2xl transition-all active:scale-90"
               >
-                <ArrowLeft size={20} />
+                <ArrowLeft size={22} className="text-olive-600" />
               </button>
             )}
-            <h1 className="text-xl font-bold tracking-tight">
+            <h1 className="text-2xl font-serif font-bold tracking-tight text-olive-900">
               {view === 'register' ? 'Ферм бүртгүүлэх' :
                view === 'userSelect' ? 'Хэрэглэгч сонгох' :
                view === 'list' ? (user?.farm_name || 'Фермийн Бүртгэл') : 
                view === 'add' ? 'Шинэ бүртгэл' : 
-               view === 'detail' ? 'Мэдээлэл' : 'QR Код'}
+               view === 'detail' ? 'Мэдээлэл' : 
+               view === 'reports' ? 'Тайлан' : 'QR Код'}
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -443,10 +444,10 @@ export default function App() {
               <>
                 <button 
                   onClick={handleLogout}
-                  className="p-2 hover:bg-black/5 rounded-full transition-colors text-black/40"
+                  className="p-2.5 hover:bg-olive-100 rounded-2xl transition-all text-olive-600/60 active:scale-90"
                   title="Хэрэглэгч солих"
                 >
-                  <UserIcon size={20} />
+                  <UserIcon size={22} />
                 </button>
                 <button 
                   onClick={() => {
@@ -454,7 +455,7 @@ export default function App() {
                     setImagePreview(null);
                     setView('add');
                   }}
-                  className="bg-[#5A5A40] text-white p-2 rounded-full shadow-lg hover:bg-[#4A4A30] transition-colors"
+                  className="bg-olive-600 text-white p-2.5 rounded-2xl shadow-lg shadow-olive-600/20 hover:bg-olive-700 transition-all active:scale-95"
                 >
                   <Plus size={24} />
                 </button>
@@ -464,21 +465,21 @@ export default function App() {
               <div className="flex items-center gap-1">
                 <button 
                   onClick={downloadCSV}
-                  className="p-2 hover:bg-black/5 rounded-full transition-colors text-black/40"
+                  className="p-2.5 hover:bg-olive-100 rounded-2xl transition-all text-olive-600/60 active:scale-90"
                   title="CSV татах"
                 >
                   <Download size={20} />
                 </button>
                 <button 
                   onClick={handlePrint}
-                  className="p-2 hover:bg-black/5 rounded-full transition-colors text-black/40"
+                  className="p-2.5 hover:bg-olive-100 rounded-2xl transition-all text-olive-600/60 active:scale-90"
                   title="Хэвлэх"
                 >
                   <Printer size={20} />
                 </button>
                 <button 
                   onClick={fetchReportData}
-                  className="p-2 hover:bg-black/5 rounded-full transition-colors text-black/40"
+                  className="p-2.5 hover:bg-olive-100 rounded-2xl transition-all text-olive-600/60 active:scale-90"
                   title="Шинэчлэх"
                 >
                   <TrendingUp size={20} />
@@ -489,7 +490,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto p-4 pb-24">
+      <main className="max-w-2xl mx-auto px-6 py-8 pb-32">
         <AnimatePresence mode="wait">
           {view === 'userSelect' && (
             <motion.div
@@ -497,39 +498,53 @@ export default function App() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-6 mt-8"
+              className="space-y-8 mt-8"
             >
-              <div className="text-center space-y-2 mb-8">
-                <h2 className="text-2xl font-black tracking-tight">Хэрэглэгч сонгох</h2>
-                <p className="text-black/50 text-sm">Үргэлжлүүлэх фермээ сонгоно уу.</p>
+              <div className="text-center space-y-3 mb-10">
+                <h2 className="text-3xl font-serif font-bold tracking-tight text-olive-900">Хэрэглэгч сонгох</h2>
+                <p className="text-olive-600/50 text-sm font-medium">Үргэлжлүүлэх фермээ сонгоно уу.</p>
               </div>
               
-              <div className="grid gap-3">
+              <div className="grid gap-4">
                 {users.map(u => (
-                  <button
+                  <motion.button
                     key={u.id}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => handleSwitchUser(u)}
-                    className="bg-white p-6 rounded-[32px] border border-[#141414]/5 flex items-center justify-between hover:shadow-md transition-all group text-left"
+                    className="bg-white p-6 rounded-[32px] card-shadow border border-olive-100/50 flex items-center justify-between group transition-all hover:border-olive-200 text-left"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-[#F5F5F0] rounded-2xl flex items-center justify-center text-[#5A5A40]">
-                        <Home size={24} />
+                    <div className="flex items-center gap-5">
+                      <div className="w-14 h-14 bg-olive-50 rounded-[22px] flex items-center justify-center text-olive-600 shadow-inner border border-olive-100">
+                        <Home size={28} />
                       </div>
                       <div>
-                        <h3 className="font-bold text-lg">{u.farm_name}</h3>
-                        <p className="text-sm text-black/40">{u.name}</p>
+                        <h3 className="font-serif font-bold text-xl text-olive-900">{u.farm_name}</h3>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-olive-600/40 font-bold uppercase tracking-widest">{u.name}</p>
+                          {u.location && (
+                            <>
+                              <span className="w-1 h-1 rounded-full bg-olive-200" />
+                              <p className="text-xs text-olive-600/40 font-medium">{u.location}</p>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <ChevronRight className="text-black/20 group-hover:text-[#5A5A40] transition-colors" />
-                  </button>
+                    <div className="w-10 h-10 rounded-xl bg-olive-50 flex items-center justify-center text-olive-600 group-hover:bg-olive-600 group-hover:text-white transition-all shadow-sm">
+                      <ChevronRight size={20} />
+                    </div>
+                  </motion.button>
                 ))}
                 
                 <button
                   onClick={() => setView('register')}
-                  className="mt-4 p-6 rounded-[32px] border border-dashed border-[#5A5A40]/40 flex items-center justify-center gap-3 text-[#5A5A40] font-bold hover:bg-[#5A5A40]/5 transition-all"
+                  className="mt-6 p-8 rounded-[40px] border-2 border-dashed border-olive-600/20 flex flex-col items-center justify-center gap-3 text-olive-600 font-bold hover:bg-olive-50 hover:border-olive-600/40 transition-all group"
                 >
-                  <Plus size={20} />
-                  Шинэ ферм бүртгэх
+                  <div className="w-12 h-12 bg-olive-50 rounded-2xl flex items-center justify-center group-hover:bg-olive-600 group-hover:text-white transition-all">
+                    <Plus size={24} />
+                  </div>
+                  <span className="uppercase tracking-widest text-xs">Шинэ ферм бүртгэх</span>
                 </button>
               </div>
             </motion.div>
@@ -538,48 +553,60 @@ export default function App() {
           {view === 'register' && (
             <motion.div
               key="register"
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white p-8 rounded-[40px] shadow-xl border border-[#141414]/5 text-center space-y-8 mt-12"
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white p-10 rounded-[48px] card-shadow border border-olive-100/50 text-center space-y-10 mt-12"
             >
               <div className="flex justify-between items-start">
                 <div className="w-10 h-10" /> {/* Spacer */}
-                <div className="w-20 h-20 bg-[#F5F5F0] rounded-3xl flex items-center justify-center text-[#5A5A40]">
-                  <Home size={40} />
+                <div className="w-24 h-24 bg-olive-50 rounded-[32px] flex items-center justify-center text-olive-600 shadow-inner border border-olive-100">
+                  <Home size={48} />
                 </div>
                 {users.length > 0 ? (
                   <button 
                     onClick={() => setView('userSelect')}
-                    className="p-2 hover:bg-black/5 rounded-full transition-colors text-black/40"
+                    className="p-3 hover:bg-olive-50 rounded-full transition-colors text-olive-600/40 active:scale-90"
                   >
-                    <ArrowLeft size={20} />
+                    <ArrowLeft size={24} />
                   </button>
                 ) : <div className="w-10 h-10" />}
               </div>
-              <div className="space-y-2">
-                <h2 className="text-2xl font-black tracking-tight">Тавтай морилно уу!</h2>
-                <p className="text-black/50 text-sm">Фермийнхээ мэдээллийг бүртгэж эхэлнэ үү.</p>
+              <div className="space-y-3">
+                <h2 className="text-3xl font-serif font-bold tracking-tight text-olive-900">Тавтай морилно уу!</h2>
+                <p className="text-olive-600/50 text-sm font-medium">Фермийнхээ мэдээллийг бүртгэж эхэлнэ үү.</p>
               </div>
               
-              <form onSubmit={handleRegister} className="space-y-4 text-left">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Таны нэр</label>
-                  <input name="name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Бат" />
+              <form onSubmit={handleRegister} className="space-y-6 text-left">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-2 ml-1">Таны нэр</label>
+                    <input name="name" required className="w-full p-4 bg-olive-50 rounded-2xl border-none focus:ring-4 focus:ring-olive-600/5 focus:bg-white transition-all" placeholder="Жишээ: Бат" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-2 ml-1">Фермийн нэр</label>
+                    <input name="farm_name" required className="w-full p-4 bg-olive-50 rounded-2xl border-none focus:ring-4 focus:ring-olive-600/5 focus:bg-white transition-all" placeholder="Жишээ: Баян Ферм" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-2 ml-1">Байршил</label>
+                      <input name="location" className="w-full p-4 bg-olive-50 rounded-2xl border-none focus:ring-4 focus:ring-olive-600/5 focus:bg-white transition-all" placeholder="Жишээ: Төв аймаг" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-2 ml-1">Утас</label>
+                      <input name="phone" type="tel" className="w-full p-4 bg-olive-50 rounded-2xl border-none focus:ring-4 focus:ring-olive-600/5 focus:bg-white transition-all" placeholder="9911...." />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-2 ml-1">И-мэйл (заавал биш)</label>
+                    <input name="email" type="email" className="w-full p-4 bg-olive-50 rounded-2xl border-none focus:ring-4 focus:ring-olive-600/5 focus:bg-white transition-all" placeholder="example@mail.com" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-2 ml-1">PIN код (4 оронтой)</label>
+                    <input name="pin_code" type="password" maxLength={4} required className="w-full p-4 bg-olive-50 rounded-2xl border-none focus:ring-4 focus:ring-olive-600/5 focus:bg-white transition-all" placeholder="****" />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Фермийн нэр</label>
-                  <input name="farm_name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Баян Ферм" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">И-мэйл (заавал биш)</label>
-                  <input name="email" type="email" className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="example@mail.com" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">PIN код (4 оронтой)</label>
-                  <input name="pin_code" type="password" maxLength={4} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="****" />
-                </div>
-                <button type="submit" className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98] mt-4">
+                <button type="submit" className="w-full bg-olive-600 text-white py-5 rounded-2xl font-bold text-lg shadow-lg shadow-olive-600/20 hover:bg-olive-700 transition-all active:scale-[0.98] mt-6">
                   Эхлэх
                 </button>
               </form>
@@ -591,119 +618,90 @@ export default function App() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="space-y-4"
+              className="space-y-8"
             >
-              {/* Notifications */}
-              {(heatAlerts.length > 0 || birthAlerts.length > 0) && (
-                <div className="space-y-3">
-                  {heatAlerts.length > 0 && (
-                    <div className="bg-amber-50 border border-amber-200 p-4 rounded-3xl">
-                      <div className="flex items-center gap-2 text-amber-800 font-bold mb-3">
-                        <Bell size={18} />
-                        <span>Ороо орох дөхсөн үнээнүүд</span>
-                      </div>
-                      <div className="space-y-2">
-                        {heatAlerts.map(cow => (
-                          <div key={cow.id} className="flex items-center justify-between bg-white/50 p-2 rounded-xl text-sm">
-                            <span className="font-bold">#{cow.tag_code} ({cow.breed})</span>
-                            <span className="text-amber-700">Ороо орох мөчлөг</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {birthAlerts.length > 0 && (
-                    <div className="bg-blue-50 border border-blue-200 p-4 rounded-3xl">
-                      <div className="flex items-center gap-2 text-blue-800 font-bold mb-3">
-                        <Bell size={18} />
-                        <span>Төрөх дөхсөн үнээнүүд</span>
-                      </div>
-                      <div className="space-y-2">
-                        {birthAlerts.map(cow => {
-                          const dueDate = addDays(new Date(cow.insemination_date!), 283);
-                          const daysLeft = differenceInDays(dueDate, new Date());
-                          return (
-                            <div key={cow.id} className="flex items-center justify-between bg-white/50 p-2 rounded-xl text-sm">
-                              <span className="font-bold">#{cow.tag_code} ({cow.breed})</span>
-                              <span className="text-blue-700">{daysLeft === 0 ? 'Өнөөдөр төрөх' : `${daysLeft} хоногийн дараа`}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
               {/* Dashboard Summary */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white p-4 rounded-3xl border border-[#141414]/5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1">Нийт үнээ</p>
-                  <p className="text-2xl font-black">{cows.length}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white p-6 rounded-[32px] card-shadow border border-olive-100/50">
+                  <div className="w-10 h-10 bg-olive-50 rounded-2xl flex items-center justify-center text-olive-600 mb-4">
+                    <Milk size={20} />
+                  </div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-1">Нийт үнээ</p>
+                  <p className="text-3xl font-serif font-bold text-olive-900">{cows.length}</p>
                 </div>
-                <div className="bg-white p-4 rounded-3xl border border-[#141414]/5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1">Мэдэгдэл</p>
-                  <p className={cn("text-2xl font-black", totalAlerts > 0 ? "text-amber-600" : "text-black/20")}>{totalAlerts}</p>
+                <div className="bg-white p-6 rounded-[32px] card-shadow border border-olive-100/50">
+                  <div className="w-10 h-10 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 mb-4">
+                    <Bell size={20} />
+                  </div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-1">Мэдэгдэл</p>
+                  <p className={cn("text-3xl font-serif font-bold", totalAlerts > 0 ? "text-amber-600" : "text-olive-900/20")}>{totalAlerts}</p>
                 </div>
               </div>
 
               {/* Alerts Section */}
               {totalAlerts > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-black/40 px-1">Шуурхай мэдэгдэл</h3>
-                  <div className="space-y-2">
+                <div className="space-y-4">
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-olive-600/40 px-1">Шуурхай мэдэгдэл</h3>
+                  <div className="space-y-3">
                     {heatAlerts.map(cow => (
-                      <div key={`heat-${cow.id}`} className="bg-amber-50 border border-amber-200 p-4 rounded-3xl flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600">
-                            <Bell size={20} />
+                      <motion.div 
+                        key={`heat-${cow.id}`} 
+                        whileHover={{ scale: 1.01 }}
+                        className="bg-amber-50/50 border border-amber-100 p-4 rounded-[24px] flex items-center justify-between group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 shadow-sm">
+                            <Bell size={22} />
                           </div>
                           <div>
-                            <p className="font-bold text-sm">Ороо орох дөхсөн: #{cow.tag_code}</p>
-                            <p className="text-xs text-amber-700/60">{cow.breed}</p>
+                            <p className="font-bold text-olive-900">Ороо орох дөхсөн: #{cow.tag_code}</p>
+                            <p className="text-xs text-amber-700/60 font-medium">{cow.breed}</p>
                           </div>
                         </div>
                         <button 
                           onClick={() => fetchCowDetail(cow.id)}
-                          className="text-xs font-bold text-amber-600 hover:underline"
+                          className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-amber-600 shadow-sm group-hover:bg-amber-600 group-hover:text-white transition-all"
                         >
-                          Харах
+                          <ChevronRight size={20} />
                         </button>
-                      </div>
+                      </motion.div>
                     ))}
                     {birthAlerts.map(cow => (
-                      <div key={`birth-${cow.id}`} className="bg-blue-50 border border-blue-200 p-4 rounded-3xl flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600">
-                            <Bell size={20} />
+                      <motion.div 
+                        key={`birth-${cow.id}`} 
+                        whileHover={{ scale: 1.01 }}
+                        className="bg-blue-50/50 border border-blue-100 p-4 rounded-[24px] flex items-center justify-between group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm">
+                            <Bell size={22} />
                           </div>
                           <div>
-                            <p className="font-bold text-sm">Төрөх дөхсөн: #{cow.tag_code}</p>
-                            <p className="text-xs text-blue-700/60">{cow.breed}</p>
+                            <p className="font-bold text-olive-900">Төрөх дөхсөн: #{cow.tag_code}</p>
+                            <p className="text-xs text-blue-700/60 font-medium">{cow.breed}</p>
                           </div>
                         </div>
                         <button 
                           onClick={() => fetchCowDetail(cow.id)}
-                          className="text-xs font-bold text-blue-600 hover:underline"
+                          className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-blue-600 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-all"
                         >
-                          Харах
+                          <ChevronRight size={20} />
                         </button>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 </div>
               )}
 
               {/* Search & Scan */}
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-black/40" size={18} />
+              <div className="space-y-4">
+                <div className="flex gap-3">
+                  <div className="relative flex-1 group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-olive-600/40 group-focus-within:text-olive-600 transition-colors" size={20} />
                     <input 
                       type="text" 
                       placeholder="Ээмэгний код эсвэл үүлдэр..."
-                      className="w-full pl-10 pr-4 py-3 bg-white border border-[#141414]/10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#5A5A40]/20"
+                      className="w-full pl-12 pr-4 py-4 bg-white border border-olive-100 rounded-[24px] focus:outline-none focus:ring-4 focus:ring-olive-600/5 focus:border-olive-600/20 transition-all card-shadow"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -711,20 +709,14 @@ export default function App() {
                   <button 
                     onClick={() => setShowFilters(!showFilters)}
                     className={cn(
-                      "border border-[#141414]/10 p-3 rounded-2xl transition-colors relative",
-                      showFilters ? "bg-[#5A5A40] text-white" : "bg-white hover:bg-black/5"
+                      "p-4 rounded-[24px] transition-all relative card-shadow border",
+                      showFilters ? "bg-olive-600 text-white border-olive-600" : "bg-white text-olive-600 border-olive-100 hover:bg-olive-50"
                     )}
                   >
                     <Filter size={24} />
                     {(filters.breed || filters.ageRange !== 'all' || filters.calvingRange !== 'all') && (
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white" />
+                      <div className="absolute top-3 right-3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
                     )}
-                  </button>
-                  <button 
-                    onClick={() => setView('scan')}
-                    className="bg-white border border-[#141414]/10 p-3 rounded-2xl hover:bg-black/5 transition-colors"
-                  >
-                    <QrCode size={24} />
                   </button>
                 </div>
 
@@ -814,40 +806,46 @@ export default function App() {
                   <p className="text-black/40">Бүртгэлтэй үнээ олдсонгүй</p>
                 </div>
               ) : (
-                <div className="grid gap-3">
+                <div className="grid gap-4">
                   {filteredCows.map(cow => (
-                    <button
+                    <motion.button 
                       key={cow.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => {
                         setSelectedCowId(cow.id);
                         setView('detail');
                       }}
-                      className="bg-white p-4 rounded-3xl border border-[#141414]/5 flex items-center justify-between hover:shadow-md transition-all group text-left"
+                      className="w-full bg-white p-5 rounded-[28px] card-shadow border border-olive-100/50 flex items-center justify-between group transition-all hover:border-olive-200 text-left"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-[#F5F5F0] rounded-2xl flex items-center justify-center text-[#5A5A40] overflow-hidden">
+                      <div className="flex items-center gap-5">
+                        <div className="w-16 h-16 bg-olive-50 rounded-[22px] flex items-center justify-center text-olive-600 shadow-inner border border-olive-100 overflow-hidden">
                           {cow.image_data ? (
                             <img src={cow.image_data} alt={cow.tag_code} className="w-full h-full object-cover" />
                           ) : (
-                            <Milk size={24} />
+                            <Milk size={28} />
                           )}
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-lg">#{cow.tag_code}</h3>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <h3 className="font-serif font-bold text-xl text-olive-900">#{cow.tag_code}</h3>
                             {cow.type === 'calf' && (
-                              <span className="text-[10px] bg-[#5A5A40]/10 text-[#5A5A40] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                              <span className="text-[9px] bg-olive-100 text-olive-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest border border-olive-200">
                                 Тугал
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-black/50">
+                          <p className="text-sm text-olive-600/50 font-medium">
                             {cow.type === 'cow' ? `${cow.breed} • ${cow.age} настай` : `${cow.gender === 'female' ? 'Охин' : 'Эр'} • ${cow.birth_date}`}
                           </p>
                         </div>
                       </div>
-                      <ChevronRight className="text-black/20 group-hover:text-[#5A5A40] transition-colors" />
-                    </button>
+                      <div className="w-10 h-10 rounded-xl bg-olive-50 flex items-center justify-center text-olive-600 group-hover:bg-olive-600 group-hover:text-white transition-all shadow-sm">
+                        <ChevronRight size={20} />
+                      </div>
+                    </motion.button>
                   ))}
                 </div>
               )}
@@ -857,19 +855,19 @@ export default function App() {
           {view === 'add' && (
             <motion.div 
               key="add"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="bg-white p-8 rounded-[40px] card-shadow border border-olive-100/50"
             >
               {/* Type Toggle */}
-              <div className="flex p-1 bg-[#F5F5F0] rounded-2xl mb-8">
+              <div className="flex p-1.5 bg-olive-50 rounded-[24px] mb-10 border border-olive-100/50">
                 <button 
                   onClick={() => setRegistrationType('cow')}
                   disabled={isEditing}
                   className={cn(
-                    "flex-1 py-3 rounded-xl font-bold text-sm transition-all",
-                    registrationType === 'cow' ? "bg-white shadow-sm text-[#5A5A40]" : "text-black/40",
+                    "flex-1 py-3.5 rounded-[18px] font-bold text-sm transition-all",
+                    registrationType === 'cow' ? "bg-white shadow-md text-olive-600" : "text-olive-600/40",
                     isEditing && "opacity-50 cursor-not-allowed"
                   )}
                 >
@@ -879,8 +877,8 @@ export default function App() {
                   onClick={() => setRegistrationType('calf')}
                   disabled={isEditing}
                   className={cn(
-                    "flex-1 py-3 rounded-xl font-bold text-sm transition-all",
-                    registrationType === 'calf' ? "bg-white shadow-sm text-[#5A5A40]" : "text-black/40",
+                    "flex-1 py-3.5 rounded-[18px] font-bold text-sm transition-all",
+                    registrationType === 'calf' ? "bg-white shadow-md text-olive-600" : "text-olive-600/40",
                     isEditing && "opacity-50 cursor-not-allowed"
                   )}
                 >
@@ -888,14 +886,14 @@ export default function App() {
                 </button>
               </div>
 
-              <form key={isEditing ? `edit-${cowDetail?.id}` : 'add'} onSubmit={handleSubmitCow} className="space-y-6">
+              <form key={isEditing ? `edit-${cowDetail?.id}` : 'add'} onSubmit={handleSubmitCow} className="space-y-8">
                 {/* Image Upload */}
                 <div className="flex flex-col items-center gap-4">
-                  <div className="relative w-32 h-32 bg-[#F5F5F0] rounded-3xl flex items-center justify-center text-[#5A5A40] overflow-hidden border-2 border-dashed border-[#5A5A40]/20">
+                  <div className="relative w-36 h-36 bg-olive-50 rounded-[40px] flex items-center justify-center text-olive-600 overflow-hidden border-2 border-dashed border-olive-600/20 group hover:border-olive-600/40 transition-all cursor-pointer shadow-inner">
                     {imagePreview ? (
                       <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
-                      <Camera size={32} className="opacity-40" />
+                      <Camera size={40} className="opacity-30 group-hover:opacity-50 transition-opacity" />
                     )}
                     <input 
                       type="file" 
@@ -904,19 +902,19 @@ export default function App() {
                       className="absolute inset-0 opacity-0 cursor-pointer"
                     />
                   </div>
-                  <p className="text-xs font-bold text-black/40 uppercase tracking-widest">
+                  <p className="text-[10px] font-bold text-olive-600/40 uppercase tracking-widest">
                     {registrationType === 'cow' ? 'Үхрийн зураг' : 'Тугалын зураг'}
                   </p>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Ээмэгний код</label>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-2 ml-1">Ээмэгний код</label>
                     <input 
                       name="tag_code" 
                       required 
                       defaultValue={isEditing ? cowDetail?.tag_code : ''}
-                      className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" 
+                      className="w-full p-4 bg-olive-50 rounded-2xl border-none focus:ring-4 focus:ring-olive-600/5 focus:bg-white transition-all" 
                       placeholder="Жишээ: 1234" 
                     />
                   </div>
@@ -925,53 +923,53 @@ export default function App() {
                     <>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Үүлдэр</label>
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-2 ml-1">Үүлдэр</label>
                           <input 
                             name="breed" 
                             defaultValue={isEditing ? cowDetail?.breed || '' : ''}
-                            className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" 
+                            className="w-full p-4 bg-olive-50 rounded-2xl border-none focus:ring-4 focus:ring-olive-600/5 focus:bg-white transition-all" 
                             placeholder="Жишээ: Алатау" 
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Нас</label>
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-2 ml-1">Нас</label>
                           <input 
                             name="age" 
                             type="number" 
                             defaultValue={isEditing ? cowDetail?.age : ''}
-                            className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" 
+                            className="w-full p-4 bg-olive-50 rounded-2xl border-none focus:ring-4 focus:ring-olive-600/5 focus:bg-white transition-all" 
                             placeholder="0" 
                           />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Хэд тугалсан</label>
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-2 ml-1">Хэд тугалсан</label>
                           <input 
                             name="calvings" 
                             type="number" 
                             defaultValue={isEditing ? cowDetail?.calvings : ''}
-                            className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" 
+                            className="w-full p-4 bg-olive-50 rounded-2xl border-none focus:ring-4 focus:ring-olive-600/5 focus:bg-white transition-all" 
                             placeholder="0" 
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Сүүлд тугалсан огноо</label>
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-2 ml-1">Сүүлд тугалсан огноо</label>
                           <input 
                             name="last_calving_date" 
                             type="date" 
                             defaultValue={isEditing ? cowDetail?.last_calving_date || '' : ''}
-                            className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" 
+                            className="w-full p-4 bg-olive-50 rounded-2xl border-none focus:ring-4 focus:ring-olive-600/5 focus:bg-white transition-all" 
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Буханд гарсан огноо</label>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-2 ml-1">Буханд гарсан огноо</label>
                         <input 
                           name="insemination_date" 
                           type="date" 
                           defaultValue={isEditing ? cowDetail?.insemination_date || '' : ''}
-                          className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" 
+                          className="w-full p-4 bg-olive-50 rounded-2xl border-none focus:ring-4 focus:ring-olive-600/5 focus:bg-white transition-all" 
                         />
                       </div>
                     </>
@@ -979,22 +977,22 @@ export default function App() {
                     <>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Төрсөн огноо</label>
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-2 ml-1">Төрсөн огноо</label>
                           <input 
                             name="birth_date" 
                             type="date" 
                             required 
                             defaultValue={isEditing ? cowDetail?.birth_date || '' : ''}
-                            className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" 
+                            className="w-full p-4 bg-olive-50 rounded-2xl border-none focus:ring-4 focus:ring-olive-600/5 focus:bg-white transition-all" 
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Хүйс</label>
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-2 ml-1">Хүйс</label>
                           <select 
                             name="gender" 
                             required 
                             defaultValue={isEditing ? cowDetail?.gender || 'female' : 'female'}
-                            className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20 text-sm"
+                            className="w-full p-4 bg-olive-50 rounded-2xl border-none focus:ring-4 focus:ring-olive-600/5 focus:bg-white transition-all text-sm appearance-none"
                           >
                             <option value="female">Охин</option>
                             <option value="male">Эр</option>
@@ -1002,11 +1000,11 @@ export default function App() {
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Эхийн код</label>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-2 ml-1">Эхийн код</label>
                         <input 
                           name="mother_tag" 
                           defaultValue={isEditing ? cowDetail?.mother_tag || '' : ''}
-                          className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" 
+                          className="w-full p-4 bg-olive-50 rounded-2xl border-none focus:ring-4 focus:ring-olive-600/5 focus:bg-white transition-all" 
                           placeholder="Эхийн ээмэгний код" 
                         />
                       </div>
@@ -1014,17 +1012,17 @@ export default function App() {
                   )}
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Бусад тэмдэглэл</label>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-2 ml-1">Бусад тэмдэглэл</label>
                     <textarea 
                       name="notes" 
                       rows={3} 
                       defaultValue={isEditing ? cowDetail?.notes || '' : ''}
-                      className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" 
+                      className="w-full p-4 bg-olive-50 rounded-2xl border-none focus:ring-4 focus:ring-olive-600/5 focus:bg-white transition-all resize-none" 
                       placeholder="Нэмэлт мэдээлэл..." 
                     />
                   </div>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-4">
                   {isEditing && (
                     <button 
                       type="button"
@@ -1033,12 +1031,12 @@ export default function App() {
                         setView('detail');
                         setImagePreview(null);
                       }}
-                      className="flex-1 bg-[#F5F5F0] text-black/60 py-4 rounded-2xl font-bold hover:bg-black/5 transition-colors"
+                      className="flex-1 bg-olive-50 text-olive-600/60 py-4 rounded-2xl font-bold hover:bg-olive-100 transition-all active:scale-95"
                     >
                       Цуцлах
                     </button>
                   )}
-                  <button type="submit" className="flex-[2] bg-[#5A5A40] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#4A4A30] transition-colors">
+                  <button type="submit" className="flex-[2] bg-olive-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-olive-600/20 hover:bg-olive-700 transition-all active:scale-95">
                     <Save size={20} />
                     {isEditing ? 'Өөрчлөх' : 'Бүртгэх'}
                   </button>
@@ -1050,25 +1048,28 @@ export default function App() {
           {view === 'detail' && cowDetail && (
             <motion.div 
               key="detail"
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="space-y-6"
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="space-y-8"
             >
               {/* Info Card */}
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="flex gap-4">
-                    <div className="w-20 h-20 bg-[#F5F5F0] rounded-2xl flex items-center justify-center text-[#5A5A40] overflow-hidden">
+              <div className="bg-white p-8 rounded-[40px] card-shadow border border-olive-100/50">
+                <div className="flex justify-between items-start mb-8">
+                  <div className="flex gap-6">
+                    <div className="w-24 h-24 bg-olive-50 rounded-[32px] flex items-center justify-center text-olive-600 overflow-hidden shadow-inner border border-olive-100">
                       {cowDetail.image_data ? (
                         <img src={cowDetail.image_data} alt={cowDetail.tag_code} className="w-full h-full object-cover" />
                       ) : (
-                        <Milk size={32} />
+                        <Milk size={40} />
                       )}
                     </div>
                     <div>
-                      <h2 className="text-3xl font-black tracking-tighter">#{cowDetail.tag_code}</h2>
-                      <p className="text-[#5A5A40] font-medium">{cowDetail.breed}</p>
+                      <h2 className="text-4xl font-serif font-bold tracking-tighter text-olive-900">#{cowDetail.tag_code}</h2>
+                      <p className="text-olive-600 font-medium text-lg">{cowDetail.breed}</p>
+                      <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-olive-50 text-olive-600 text-[10px] font-bold uppercase tracking-wider border border-olive-100">
+                        {cowDetail.type === 'cow' ? 'Үнээ' : 'Тугал'}
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -1079,52 +1080,52 @@ export default function App() {
                         setImagePreview(cowDetail.image_data);
                         setView('add');
                       }}
-                      className="p-2 text-[#5A5A40] hover:bg-[#F5F5F0] rounded-full transition-colors"
+                      className="p-3 text-olive-600 hover:bg-olive-50 rounded-2xl transition-all active:scale-90"
                     >
-                      <Edit2 size={20} />
+                      <Edit2 size={22} />
                     </button>
                     <button 
                       onClick={() => handleDeleteCow(cowDetail.id)}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                      className="p-3 text-red-500 hover:bg-red-50 rounded-2xl transition-all active:scale-90"
                     >
-                      <Trash2 size={20} />
+                      <Trash2 size={22} />
                     </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#F5F5F0] rounded-xl flex items-center justify-center text-[#5A5A40]">
-                      <Info size={20} />
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-olive-50 rounded-2xl flex items-center justify-center text-olive-600 border border-olive-100">
+                      <Info size={22} />
                     </div>
                     <div>
                       {cowDetail.type === 'cow' ? (
                         <>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-black/40">Нас / Тугалсан</p>
-                          <p className="font-bold">{cowDetail.age} нас / {cowDetail.calvings} удаа</p>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-0.5">Нас / Тугалсан</p>
+                          <p className="font-bold text-olive-900">{cowDetail.age} нас / {cowDetail.calvings} удаа</p>
                         </>
                       ) : (
                         <>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-black/40">Хүйс / Төрсөн</p>
-                          <p className="font-bold">{cowDetail.gender === 'female' ? 'Охин' : 'Эр'} / {cowDetail.birth_date}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-0.5">Хүйс / Төрсөн</p>
+                          <p className="font-bold text-olive-900">{cowDetail.gender === 'female' ? 'Охин' : 'Эр'} / {cowDetail.birth_date}</p>
                         </>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#F5F5F0] rounded-xl flex items-center justify-center text-[#5A5A40]">
-                      <Calendar size={20} />
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-olive-50 rounded-2xl flex items-center justify-center text-olive-600 border border-olive-100">
+                      <Calendar size={22} />
                     </div>
                     <div>
                       {cowDetail.type === 'cow' ? (
                         <>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-black/40">Сүүлд тугалсан</p>
-                          <p className="font-bold">{cowDetail.last_calving_date || 'Бүртгэлгүй'}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-0.5">Сүүлд тугалсан</p>
+                          <p className="font-bold text-olive-900">{cowDetail.last_calving_date || 'Бүртгэлгүй'}</p>
                         </>
                       ) : (
                         <>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-black/40">Эхийн код</p>
-                          <p className="font-bold">{cowDetail.mother_tag || 'Бүртгэлгүй'}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-0.5">Эхийн код</p>
+                          <p className="font-bold text-olive-900">{cowDetail.mother_tag || 'Бүртгэлгүй'}</p>
                         </>
                       )}
                     </div>
@@ -1132,11 +1133,13 @@ export default function App() {
                 </div>
 
                 {cowDetail.type === 'cow' && cowDetail.last_calving_date && (
-                   <div className="mt-4 p-4 bg-amber-50 rounded-2xl flex items-center gap-3">
-                      <AlertCircle className="text-amber-600" size={20} />
+                   <div className="mt-8 p-5 bg-amber-50/50 border border-amber-100 rounded-3xl flex items-center gap-4">
+                      <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600">
+                        <AlertCircle size={22} />
+                      </div>
                       <div className="text-sm">
                         <p className="font-bold text-amber-900">Дараагийн ороо орох мөчлөг:</p>
-                        <p className="text-amber-800">
+                        <p className="text-amber-800/80 font-medium">
                           {(() => {
                             const calvingDate = new Date(cowDetail.last_calving_date!);
                             const today = new Date();
@@ -1151,11 +1154,13 @@ export default function App() {
                 )}
 
                 {cowDetail.type === 'cow' && cowDetail.insemination_date && (
-                   <div className="mt-3 p-4 bg-blue-50 rounded-2xl flex items-center gap-3">
-                      <Bell className="text-blue-600" size={20} />
+                   <div className="mt-4 p-5 bg-blue-50/50 border border-blue-100 rounded-3xl flex items-center gap-4">
+                      <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+                        <Bell size={22} />
+                      </div>
                       <div className="text-sm">
                         <p className="font-bold text-blue-900">Төрөх дөхсөн хугацаа (283 хоног):</p>
-                        <p className="text-blue-800">
+                        <p className="text-blue-800/80 font-medium">
                           {(() => {
                             const inseminationDate = new Date(cowDetail.insemination_date!);
                             const today = new Date();
@@ -1169,39 +1174,39 @@ export default function App() {
                 )}
 
                 {cowDetail.notes && (
-                  <div className="mt-6 p-4 bg-[#F5F5F0] rounded-2xl">
-                    <p className="text-xs font-bold uppercase tracking-widest text-black/40 mb-1">Тэмдэглэл</p>
-                    <p className="text-sm">{cowDetail.notes}</p>
+                  <div className="mt-8 p-6 bg-olive-50 rounded-3xl border border-olive-100">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-2">Тэмдэглэл</p>
+                    <p className="text-sm text-olive-900 leading-relaxed">{cowDetail.notes}</p>
                   </div>
                 )}
 
                 {/* Total Yield Stat */}
-                <div className="mt-6 grid grid-cols-1 gap-4">
-                  <div className="bg-[#5A5A40] text-white p-6 rounded-[32px] shadow-lg flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-1">Нийт саасан сүү</p>
-                      <p className="text-3xl font-black">{cowDetail.yields.reduce((sum, y) => sum + y.amount, 0).toFixed(1)} <span className="text-lg font-normal">литр</span></p>
+                <div className="mt-8">
+                  <div className="bg-olive-600 text-white p-8 rounded-[40px] shadow-xl shadow-olive-600/20 flex items-center justify-between relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
+                    <div className="relative z-10">
+                      <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-2">Нийт саасан сүү</p>
+                      <p className="text-4xl font-serif font-bold">{cowDetail.yields.reduce((sum, y) => sum + y.amount, 0).toFixed(1)} <span className="text-xl font-normal opacity-70">литр</span></p>
                     </div>
-                    <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
-                      <TrendingUp size={24} />
+                    <div className="w-16 h-16 bg-white/10 rounded-3xl flex items-center justify-center relative z-10">
+                      <TrendingUp size={32} />
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Milk Yield Chart */}
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-bold flex items-center gap-2">
-                    <TrendingUp size={20} className="text-[#5A5A40]" />
+              <div className="bg-white p-8 rounded-[40px] card-shadow border border-olive-100/50">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="font-serif font-bold text-xl flex items-center gap-3 text-olive-900">
+                    <TrendingUp size={24} className="text-olive-600" />
                     Сүүний гарц (Литр)
                   </h3>
                 </div>
-                <div className="h-48 w-full">
+                <div className="h-64 w-full">
                   {cowDetail.yields.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={(() => {
-                        // Group by date and separate by session
                         const grouped = cowDetail.yields.reduce((acc: any, curr) => {
                           const date = curr.date;
                           if (!acc[date]) acc[date] = { date, morning: 0, evening: 0 };
@@ -1214,35 +1219,41 @@ export default function App() {
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
                         <XAxis 
                           dataKey="date" 
-                          tick={{ fontSize: 10 }} 
+                          tick={{ fontSize: 10, fill: '#84844a' }} 
                           tickFormatter={(val) => format(new Date(val), 'MM/dd')}
+                          axisLine={false}
+                          tickLine={false}
                         />
-                        <YAxis tick={{ fontSize: 10 }} />
+                        <YAxis 
+                          tick={{ fontSize: 10, fill: '#84844a' }} 
+                          axisLine={false}
+                          tickLine={false}
+                        />
                         <Tooltip 
-                          contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                          contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', padding: '16px' }}
                         />
                         <Line 
                           name="Өглөө"
                           type="monotone" 
                           dataKey="morning" 
                           stroke="#F27D26" 
-                          strokeWidth={3} 
-                          dot={{ fill: '#F27D26', strokeWidth: 2 }}
-                          activeDot={{ r: 6 }}
+                          strokeWidth={4} 
+                          dot={{ fill: '#F27D26', strokeWidth: 2, r: 4 }}
+                          activeDot={{ r: 8, strokeWidth: 0 }}
                         />
                         <Line 
                           name="Орой"
                           type="monotone" 
                           dataKey="evening" 
                           stroke="#4A90E2" 
-                          strokeWidth={3} 
-                          dot={{ fill: '#4A90E2', strokeWidth: 2 }}
-                          activeDot={{ r: 6 }}
+                          strokeWidth={4} 
+                          dot={{ fill: '#4A90E2', strokeWidth: 2, r: 4 }}
+                          activeDot={{ r: 8, strokeWidth: 0 }}
                         />
                       </LineChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-black/30 text-sm italic">
+                    <div className="h-full flex items-center justify-center text-olive-600/30 text-sm italic">
                       Мэдээлэл байхгүй байна
                     </div>
                   )}
@@ -1250,39 +1261,39 @@ export default function App() {
               </div>
 
               {/* Add Yield Form */}
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5">
-                <h3 className="font-bold mb-4 flex items-center gap-2">
-                  <Plus size={20} className="text-[#5A5A40]" />
+              <div className="bg-white p-8 rounded-[40px] card-shadow border border-olive-100/50">
+                <h3 className="font-serif font-bold text-xl mb-6 flex items-center gap-3 text-olive-900">
+                  <Plus size={24} className="text-olive-600" />
                   Саалийн хэмжээ бүртгэх
                 </h3>
-                <form onSubmit={handleAddMilk} className="space-y-3">
-                  <div className="flex gap-2">
+                <form onSubmit={handleAddMilk} className="space-y-4">
+                  <div className="flex gap-3">
                     <input 
                       name="date" 
                       type="date" 
                       required 
                       defaultValue={format(new Date(), 'yyyy-MM-dd')}
-                      className="flex-1 p-3 bg-[#F5F5F0] rounded-xl border-none text-sm" 
+                      className="flex-1 p-4 bg-olive-50 rounded-2xl border-none text-sm focus:ring-2 focus:ring-olive-600/20 transition-all" 
                     />
                     <select 
                       name="session" 
-                      className="w-32 p-3 bg-[#F5F5F0] rounded-xl border-none text-sm font-bold"
+                      className="w-32 p-4 bg-olive-50 rounded-2xl border-none text-sm font-bold text-olive-900 focus:ring-2 focus:ring-olive-600/20 transition-all appearance-none"
                     >
                       <option value="morning">Өглөө</option>
                       <option value="evening">Орой</option>
                     </select>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <input 
                       name="amount" 
                       type="number" 
                       step="0.1" 
                       required 
                       placeholder="Литр"
-                      className="flex-1 p-3 bg-[#F5F5F0] rounded-xl border-none text-sm" 
+                      className="flex-1 p-4 bg-olive-50 rounded-2xl border-none text-sm focus:ring-2 focus:ring-olive-600/20 transition-all" 
                     />
-                    <button type="submit" className="bg-[#5A5A40] text-white px-6 rounded-xl hover:bg-[#4A4A30] font-bold flex items-center gap-2">
-                      <Save size={18} />
+                    <button type="submit" className="bg-olive-600 text-white px-8 rounded-2xl hover:bg-olive-700 font-bold flex items-center gap-2 shadow-lg shadow-olive-600/20 transition-all active:scale-95">
+                      <Save size={20} />
                       Хадгалах
                     </button>
                   </div>
@@ -1290,12 +1301,12 @@ export default function App() {
               </div>
 
               {/* History */}
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5">
-                <h3 className="font-bold mb-4 flex items-center gap-2">
-                  <History size={20} className="text-[#5A5A40]" />
+              <div className="bg-white p-8 rounded-[40px] card-shadow border border-olive-100/50">
+                <h3 className="font-serif font-bold text-xl mb-6 flex items-center gap-3 text-olive-900">
+                  <History size={24} className="text-olive-600" />
                   Сүүлийн түүх
                 </h3>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {(() => {
                     const grouped = cowDetail.yields.reduce((acc: any[], curr) => {
                       const key = `${curr.date}-${curr.session}`;
@@ -1309,23 +1320,29 @@ export default function App() {
                     }, []);
                     return grouped.slice(0, 10);
                   })().map((y, idx) => (
-                    <div key={`${y.date}-${y.session}-${idx}`} className="flex justify-between items-center py-3 px-4 bg-[#F5F5F0]/50 rounded-2xl border border-black/5">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${y.session === 'morning' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
-                          {y.session === 'morning' ? <TrendingUp size={18} /> : <TrendingUp size={18} className="rotate-180" />}
+                    <motion.div 
+                      key={`${y.date}-${y.session}-${idx}`} 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="flex justify-between items-center py-4 px-5 bg-olive-50/50 rounded-[24px] border border-olive-100/50 group hover:bg-white hover:border-olive-200 transition-all"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${y.session === 'morning' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
+                          {y.session === 'morning' ? <TrendingUp size={22} /> : <TrendingUp size={22} className="rotate-180" />}
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-sm font-bold">{format(new Date(y.date), 'yyyy-MM-dd')}</span>
-                          <span className={`text-[10px] font-black uppercase ${y.session === 'morning' ? 'text-orange-600' : 'text-blue-600'}`}>
+                          <span className="text-sm font-bold text-olive-900">{format(new Date(y.date), 'yyyy-MM-dd')}</span>
+                          <span className={`text-[10px] font-black uppercase tracking-wider ${y.session === 'morning' ? 'text-orange-600' : 'text-blue-600'}`}>
                             {y.session === 'morning' ? 'Өглөө' : 'Орой'}
                           </span>
                         </div>
                       </div>
-                      <span className={`font-black text-lg ${y.session === 'morning' ? 'text-orange-700' : 'text-blue-700'}`}>{y.amount.toFixed(1)} л</span>
-                    </div>
+                      <span className={`font-serif font-bold text-xl ${y.session === 'morning' ? 'text-orange-700' : 'text-blue-700'}`}>{y.amount.toFixed(1)} л</span>
+                    </motion.div>
                   ))}
                   {cowDetail.yields.length === 0 && (
-                    <p className="text-sm text-black/30 italic">Түүх байхгүй</p>
+                    <p className="text-center text-sm text-olive-600/30 italic py-8">Түүх байхгүй</p>
                   )}
                 </div>
               </div>
@@ -1360,19 +1377,19 @@ export default function App() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="space-y-6"
+              className="space-y-8"
             >
               {/* Range Selector */}
-              <div className="flex bg-white p-1 rounded-2xl border border-[#141414]/5">
+              <div className="flex bg-white p-1.5 rounded-[24px] card-shadow border border-olive-100/50">
                 {(['daily', 'weekly', 'monthly'] as const).map((range) => (
                   <button
                     key={range}
                     onClick={() => setReportRange(range)}
                     className={cn(
-                      "flex-1 py-2 text-xs font-bold rounded-xl transition-all",
+                      "flex-1 py-3 text-xs font-bold rounded-[18px] transition-all",
                       reportRange === range 
-                        ? "bg-[#5A5A40] text-white shadow-sm" 
-                        : "text-black/40 hover:bg-black/5"
+                        ? "bg-olive-600 text-white shadow-md shadow-olive-600/20" 
+                        : "text-olive-600/40 hover:bg-olive-50"
                     )}
                   >
                     {range === 'daily' ? 'Өнөөдөр' : range === 'weekly' ? '7 хоног' : '30 хоног'}
@@ -1382,23 +1399,23 @@ export default function App() {
 
               {/* Summary Cards */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white p-6 rounded-[32px] border border-[#141414]/5 shadow-sm">
+                <div className="bg-white p-6 rounded-[32px] card-shadow border border-olive-100/50">
                   <div className="w-10 h-10 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600 mb-4">
                     <Milk size={20} />
                   </div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1">Нийт сүү</p>
-                  <p className="text-2xl font-black">
-                    {reportData.reduce((acc, curr) => acc + curr.amount, 0).toFixed(1)} л
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-1">Нийт сүү</p>
+                  <p className="text-3xl font-serif font-bold text-olive-900">
+                    {reportData.reduce((acc, curr) => acc + curr.amount, 0).toFixed(1)} <span className="text-sm font-normal opacity-50">л</span>
                   </p>
                 </div>
-                <div className="bg-white p-6 rounded-[32px] border border-[#141414]/5 shadow-sm">
+                <div className="bg-white p-6 rounded-[32px] card-shadow border border-olive-100/50">
                   <div className="w-10 h-10 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-4">
                     <TrendingUp size={20} />
                   </div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-olive-600/40 mb-1">
                     {reportRange === 'daily' ? 'Дундаж /үнээ/' : 'Өдрийн дундаж'}
                   </p>
-                  <p className="text-2xl font-black">
+                  <p className="text-3xl font-serif font-bold text-olive-900">
                     {(() => {
                       const uniqueCows = new Set(reportData.map(d => d.cow_id)).size;
                       const totalAmount = reportData.reduce((acc, curr) => acc + curr.amount, 0);
@@ -1410,15 +1427,15 @@ export default function App() {
                         const days = reportRange === 'weekly' ? 7 : 30;
                         return (totalAmount / uniqueCows / days).toFixed(1);
                       }
-                    })()} л
+                    })()} <span className="text-sm font-normal opacity-50">л</span>
                   </p>
                 </div>
               </div>
 
               {/* Chart */}
-              <div className="bg-white p-6 rounded-[32px] border border-[#141414]/5 shadow-sm">
-                <h3 className="text-sm font-bold mb-6 flex items-center gap-2">
-                  <BarChart2 size={18} className="text-[#5A5A40]" />
+              <div className="bg-white p-8 rounded-[40px] card-shadow border border-olive-100/50">
+                <h3 className="font-serif font-bold text-xl mb-8 flex items-center gap-3 text-olive-900">
+                  <BarChart2 size={24} className="text-olive-600" />
                   Сүүний гарцын график
                 </h3>
                 <div className="h-64 w-full">
@@ -1434,16 +1451,26 @@ export default function App() {
                         return Object.values(grouped).reverse();
                       })()}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
-                        <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                        <YAxis tick={{ fontSize: 10 }} />
-                        <Tooltip 
-                          contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                        <XAxis 
+                          dataKey="date" 
+                          tick={{ fontSize: 10, fill: '#84844a' }} 
+                          axisLine={false}
+                          tickLine={false}
                         />
-                        <Bar dataKey="amount" fill="#5A5A40" radius={[4, 4, 0, 0]} />
+                        <YAxis 
+                          tick={{ fontSize: 10, fill: '#84844a' }} 
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <Tooltip 
+                          contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', padding: '16px' }}
+                          cursor={{ fill: '#f5f5f0' }}
+                        />
+                        <Bar dataKey="amount" fill="#5a5a40" radius={[6, 6, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-black/30 text-sm italic">
+                    <div className="h-full flex items-center justify-center text-olive-600/30 text-sm italic">
                       Мэдээлэл байхгүй байна
                     </div>
                   )}
@@ -1451,12 +1478,12 @@ export default function App() {
               </div>
 
               {/* Top Performing Cows */}
-              <div className="bg-white p-6 rounded-[32px] border border-[#141414]/5 shadow-sm">
-                <h3 className="text-sm font-bold mb-6 flex items-center gap-2">
-                  <TrendingUp size={18} className="text-[#5A5A40]" />
+              <div className="bg-white p-8 rounded-[40px] card-shadow border border-olive-100/50">
+                <h3 className="font-serif font-bold text-xl mb-8 flex items-center gap-3 text-olive-900">
+                  <TrendingUp size={24} className="text-olive-600" />
                   Шилдэг саальчин үнээнүүд
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {(() => {
                     const cowStats = reportData.reduce((acc: any, curr) => {
                       if (!acc[curr.cow_id]) {
@@ -1477,26 +1504,32 @@ export default function App() {
                       .sort((a: any, b: any) => b.total - a.total)
                       .slice(0, 5);
                   })().map((cow: any, idx) => (
-                    <div key={cow.id} className="flex items-center justify-between group">
-                      <div className="flex items-center gap-4">
-                        <div className="w-8 h-8 rounded-full bg-[#F5F5F0] flex items-center justify-center text-xs font-bold text-black/40">
+                    <motion.div 
+                      key={cow.id} 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.1 }}
+                      className="flex items-center justify-between group"
+                    >
+                      <div className="flex items-center gap-5">
+                        <div className="w-10 h-10 rounded-2xl bg-olive-50 flex items-center justify-center text-sm font-bold text-olive-600 border border-olive-100 shadow-sm">
                           {idx + 1}
                         </div>
                         <div>
-                          <p className="font-bold text-sm">#{cow.tag}</p>
-                          <p className="text-[10px] text-black/40 uppercase font-bold tracking-wider">
+                          <p className="font-bold text-olive-900 text-lg">#{cow.tag}</p>
+                          <p className="text-[10px] text-olive-600/40 uppercase font-bold tracking-widest">
                             {cow.type === 'cow' ? 'Үнээ' : 'Тугал'}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-black text-[#5A5A40]">{cow.total.toFixed(1)} л</p>
-                        <p className="text-[10px] text-black/40">Нийт гарц</p>
+                        <p className="font-serif font-bold text-xl text-olive-600">{cow.total.toFixed(1)} л</p>
+                        <p className="text-[10px] text-olive-600/40 uppercase font-bold tracking-widest">Нийт гарц</p>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                   {reportData.length === 0 && (
-                    <p className="text-center text-sm text-black/30 italic">Мэдээлэл байхгүй</p>
+                    <p className="text-center text-sm text-olive-600/30 italic py-8">Мэдээлэл байхгүй</p>
                   )}
                 </div>
               </div>
@@ -1507,37 +1540,37 @@ export default function App() {
 
       {/* Bottom Navigation */}
       {user && (
-        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#141414]/5 pb-safe z-20">
-          <div className="max-w-2xl mx-auto px-6 py-3 flex items-center justify-between">
+        <nav className="fixed bottom-6 left-6 right-6 z-40">
+          <div className="max-w-2xl mx-auto glass rounded-[32px] border border-white/40 shadow-2xl shadow-olive-900/10 px-8 py-4 flex items-center justify-between">
             <button 
               onClick={() => setView('list')}
               className={cn(
-                "flex flex-col items-center gap-1 transition-all",
-                view === 'list' ? "text-[#5A5A40]" : "text-black/20 hover:text-black/40"
+                "flex flex-col items-center gap-1.5 transition-all active:scale-90",
+                view === 'list' ? "text-olive-600" : "text-olive-600/30 hover:text-olive-600/60"
               )}
             >
-              <Home size={24} />
-              <span className="text-[10px] font-bold uppercase tracking-wider">Нүүр</span>
+              <Home size={26} strokeWidth={view === 'list' ? 2.5 : 2} />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Нүүр</span>
             </button>
             <button 
               onClick={() => setView('scan')}
               className={cn(
-                "flex flex-col items-center gap-1 transition-all",
-                view === 'scan' ? "text-[#5A5A40]" : "text-black/20 hover:text-black/40"
+                "flex flex-col items-center gap-1.5 transition-all active:scale-90",
+                view === 'scan' ? "text-olive-600" : "text-olive-600/30 hover:text-olive-600/60"
               )}
             >
-              <QrCode size={24} />
-              <span className="text-[10px] font-bold uppercase tracking-wider">Уншуулах</span>
+              <QrCode size={26} strokeWidth={view === 'scan' ? 2.5 : 2} />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Уншуулах</span>
             </button>
             <button 
               onClick={() => setView('reports')}
               className={cn(
-                "flex flex-col items-center gap-1 transition-all",
-                view === 'reports' ? "text-[#5A5A40]" : "text-black/20 hover:text-black/40"
+                "flex flex-col items-center gap-1.5 transition-all active:scale-90",
+                view === 'reports' ? "text-olive-600" : "text-olive-600/30 hover:text-olive-600/60"
               )}
             >
-              <FileText size={24} />
-              <span className="text-[10px] font-bold uppercase tracking-wider">Тайлан</span>
+              <FileText size={26} strokeWidth={view === 'reports' ? 2.5 : 2} />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Тайлан</span>
             </button>
           </div>
         </nav>
