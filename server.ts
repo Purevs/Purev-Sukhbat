@@ -102,6 +102,16 @@ async function startServer() {
     }
   });
 
+  app.post("/api/users/login", (req, res) => {
+    const { farm_name, pin_code } = req.body;
+    const user = db.prepare("SELECT * FROM users WHERE farm_name = ? AND pin_code = ?").get(farm_name, pin_code);
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(401).json({ error: "Фермийн нэр эсвэл PIN код буруу байна." });
+    }
+  });
+
   // API Routes
   app.get("/api/cows", (req, res) => {
     const userId = req.query.userId;

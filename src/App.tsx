@@ -48,8 +48,9 @@ const cn = (...classes: string[]) => classes.filter(Boolean).join(' ');
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
-  const [view, setView] = useState<'list' | 'add' | 'detail' | 'scan' | 'register' | 'userSelect' | 'reports'>('list');
+  const [view, setView] = useState<'list' | 'add' | 'detail' | 'scan' | 'landing' | 'reports'>('list');
+  const [landingTab, setLandingTab] = useState<'login' | 'register'>('login');
+  const [loginError, setLoginError] = useState('');
   const [registrationType, setRegistrationType] = useState<'cow' | 'calf'>('cow');
   const [cows, setCows] = useState<Cow[]>([]);
   const [selectedCowId, setSelectedCowId] = useState<number | null>(null);
@@ -177,30 +178,40 @@ export default function App() {
         setUser(data);
         setView('list');
       } else {
-        const usersRes = await fetch('/api/users');
-        const allUsers = await usersRes.json();
-        if (allUsers.length > 0) {
-          setUsers(allUsers);
-          setView('userSelect');
-        } else {
-          setView('register');
-        }
+        setView('landing');
       }
     } catch (err) {
       console.error('Failed to check user:', err);
-      setView('register');
+      setView('landing');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchUsers = async () => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoginError('');
+    const formData = new FormData(e.currentTarget);
+    const data = Object.fromEntries(formData.entries());
+    
     try {
-      const res = await fetch('/api/users');
-      const data = await res.json();
-      setUsers(data);
+      const res = await fetch('/api/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        const loggedInUser = await res.json();
+        setUser(loggedInUser);
+        localStorage.setItem('farm_user_id', loggedInUser.id.toString());
+        setView('list');
+      } else {
+        const errData = await res.json();
+        setLoginError(errData.error || 'Нэвтрэхэд алдаа гарлаа.');
+      }
     } catch (err) {
-      console.error('Failed to fetch users:', err);
+      console.error('Login failed:', err);
+      setLoginError('Сервертэй холбогдоход алдаа гарлаа.');
     }
   };
 
@@ -218,6 +229,7 @@ export default function App() {
       if (res.ok) {
         const newUser = await res.json();
         setUser(newUser);
+        localStorage.setItem('farm_user_id', newUser.id.toString());
         setView('list');
       }
     } catch (err) {
@@ -225,15 +237,10 @@ export default function App() {
     }
   };
 
-  const handleSwitchUser = (selectedUser: User) => {
-    setUser(selectedUser);
-    setView('list');
-  };
-
   const handleLogout = () => {
     localStorage.removeItem('farm_user_id');
     setUser(null);
-    fetchUsers().then(() => setView('userSelect'));
+    setView('landing');
   };
 
   const fetchCows = async () => {
@@ -431,8 +438,7 @@ export default function App() {
               </button>
             )}
             <h1 className="text-xl font-bold tracking-tight">
-              {view === 'register' ? 'Ферм бүртгүүлэх' :
-               view === 'userSelect' ? 'Хэрэглэгч сонгох' :
+              {view === 'landing' ? 'Тавтай морилно уу' :
                view === 'list' ? (user?.farm_name || 'Фермийн Бүртгэл') : 
                view === 'add' ? 'Шинэ бүртгэл' : 
                view === 'detail' ? 'Мэдээлэл' : 'QR Код'}
@@ -491,98 +497,89 @@ export default function App() {
 
       <main className="max-w-2xl mx-auto p-4 pb-24">
         <AnimatePresence mode="wait">
-          {view === 'userSelect' && (
+          {view === 'landing' && (
             <motion.div
-              key="userSelect"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-6 mt-8"
-            >
-              <div className="text-center space-y-2 mb-8">
-                <h2 className="text-2xl font-black tracking-tight">Хэрэглэгч сонгох</h2>
-                <p className="text-black/50 text-sm">Үргэлжлүүлэх фермээ сонгоно уу.</p>
-              </div>
-              
-              <div className="grid gap-3">
-                {users.map(u => (
-                  <button
-                    key={u.id}
-                    onClick={() => handleSwitchUser(u)}
-                    className="bg-white p-6 rounded-[32px] border border-[#141414]/5 flex items-center justify-between hover:shadow-md transition-all group text-left"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-[#F5F5F0] rounded-2xl flex items-center justify-center text-[#5A5A40]">
-                        <Home size={24} />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-lg">{u.farm_name}</h3>
-                        <p className="text-sm text-black/40">{u.name}</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="text-black/20 group-hover:text-[#5A5A40] transition-colors" />
-                  </button>
-                ))}
-                
-                <button
-                  onClick={() => setView('register')}
-                  className="mt-4 p-6 rounded-[32px] border border-dashed border-[#5A5A40]/40 flex items-center justify-center gap-3 text-[#5A5A40] font-bold hover:bg-[#5A5A40]/5 transition-all"
-                >
-                  <Plus size={20} />
-                  Шинэ ферм бүртгэх
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-          {view === 'register' && (
-            <motion.div
-              key="register"
-              initial={{ opacity: 0, scale: 0.9 }}
+              key="landing"
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
+              exit={{ opacity: 0, scale: 0.95 }}
               className="bg-white p-8 rounded-[40px] shadow-xl border border-[#141414]/5 text-center space-y-8 mt-12"
             >
-              <div className="flex justify-between items-start">
-                <div className="w-10 h-10" /> {/* Spacer */}
+              <div className="flex justify-center">
                 <div className="w-20 h-20 bg-[#F5F5F0] rounded-3xl flex items-center justify-center text-[#5A5A40]">
                   <Home size={40} />
                 </div>
-                {users.length > 0 ? (
-                  <button 
-                    onClick={() => setView('userSelect')}
-                    className="p-2 hover:bg-black/5 rounded-full transition-colors text-black/40"
-                  >
-                    <ArrowLeft size={20} />
-                  </button>
-                ) : <div className="w-10 h-10" />}
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-2xl font-black tracking-tight">Тавтай морилно уу!</h2>
-                <p className="text-black/50 text-sm">Фермийнхээ мэдээллийг бүртгэж эхэлнэ үү.</p>
               </div>
               
-              <form onSubmit={handleRegister} className="space-y-4 text-left">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Таны нэр</label>
-                  <input name="name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Бат" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Фермийн нэр</label>
-                  <input name="farm_name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Баян Ферм" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">И-мэйл (заавал биш)</label>
-                  <input name="email" type="email" className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="example@mail.com" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">PIN код (4 оронтой)</label>
-                  <input name="pin_code" type="password" maxLength={4} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="****" />
-                </div>
-                <button type="submit" className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98] mt-4">
-                  Эхлэх
+              <div className="space-y-2">
+                <h2 className="text-2xl font-black tracking-tight">Фермийн Бүртгэл</h2>
+                <p className="text-black/50 text-sm">Фермийнхээ мэдээллийг хялбархан хянана уу.</p>
+              </div>
+
+              <div className="flex p-1 bg-[#F5F5F0] rounded-2xl">
+                <button 
+                  onClick={() => setLandingTab('login')}
+                  className={cn(
+                    "flex-1 py-3 rounded-xl text-sm font-bold transition-all",
+                    landingTab === 'login' ? "bg-white text-[#5A5A40] shadow-sm" : "text-black/40"
+                  )}
+                >
+                  Нэвтрэх
                 </button>
-              </form>
+                <button 
+                  onClick={() => setLandingTab('register')}
+                  className={cn(
+                    "flex-1 py-3 rounded-xl text-sm font-bold transition-all",
+                    landingTab === 'register' ? "bg-white text-[#5A5A40] shadow-sm" : "text-black/40"
+                  )}
+                >
+                  Бүртгүүлэх
+                </button>
+              </div>
+              
+              {landingTab === 'login' ? (
+                <form onSubmit={handleLogin} className="space-y-4 text-left">
+                  {loginError && (
+                    <div className="bg-red-50 text-red-600 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
+                      <AlertCircle size={16} />
+                      {loginError}
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Фермийн нэр</label>
+                    <input name="farm_name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Баян Ферм" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">PIN код</label>
+                    <input name="pin_code" type="password" maxLength={4} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="****" />
+                  </div>
+                  <button type="submit" className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98] mt-4">
+                    Нэвтрэх
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleRegister} className="space-y-4 text-left">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Таны нэр</label>
+                    <input name="name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Бат" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Фермийн нэр</label>
+                    <input name="farm_name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Баян Ферм" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">И-мэйл (заавал биш)</label>
+                    <input name="email" type="email" className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="example@mail.com" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">PIN код (4 оронтой)</label>
+                    <input name="pin_code" type="password" maxLength={4} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="****" />
+                  </div>
+                  <button type="submit" className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98] mt-4">
+                    Бүртгүүлэх
+                  </button>
+                </form>
+              )}
             </motion.div>
           )}
           {view === 'list' && (
