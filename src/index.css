@@ -1,35 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Libre Baskerville", serif;
-  --color-olive-50: #f5f5f0;
-  --color-olive-100: #e6e6da;
-  --color-olive-200: #d1d1b9;
-  --color-olive-300: #b8b894;
-  --color-olive-400: #9e9e6f;
-  --color-olive-500: #84844a;
-  --color-olive-600: #5a5a40;
-  --color-olive-700: #4a4a35;
-  --color-olive-800: #3a3a2a;
-  --color-olive-900: #2a2a1f;
 }
 
 body {
-  @apply antialiased bg-[#f5f5f0] text-[#1a1a1a];
-}
-
-.font-serif {
-  font-family: var(--font-serif);
-}
-
-.glass {
-  @apply bg-white/70 backdrop-blur-md border border-white/20;
-}
-
-.card-shadow {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  @apply antialiased;
 }
 
 #reader__scan_region {
@@ -37,24 +14,11 @@ body {
 }
 
 #reader__dashboard_section_csr button {
-  @apply bg-olive-600 text-white px-4 py-2 rounded-xl text-sm font-bold;
-  background-color: #5a5a40 !important;
+  @apply bg-[#5A5A40] text-white px-4 py-2 rounded-xl text-sm font-bold;
+  background-color: #5A5A40 !important;
   color: white !important;
 }
 
 #reader {
   border: none !important;
-  @apply rounded-3xl overflow-hidden;
-}
-
-@media print {
-  nav, header, button {
-    display: none !important;
-  }
-  .print-only {
-    display: block !important;
-  }
-  body {
-    background: white !important;
-  }
 }
