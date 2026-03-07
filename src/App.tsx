@@ -51,6 +51,9 @@ export default function App() {
   const [view, setView] = useState<'list' | 'add' | 'detail' | 'scan' | 'landing' | 'reports'>('list');
   const [landingTab, setLandingTab] = useState<'login' | 'register'>('login');
   const [loginError, setLoginError] = useState('');
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
   const [registrationType, setRegistrationType] = useState<'cow' | 'calf'>('cow');
   const [cows, setCows] = useState<Cow[]>([]);
   const [selectedCowId, setSelectedCowId] = useState<number | null>(null);
@@ -215,8 +218,36 @@ export default function App() {
     }
   };
 
+  const handleSendOtp = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setOtpError('');
+    setOtpLoading(true);
+    const formData = new FormData(e.currentTarget);
+    const phone = formData.get('phone') as string;
+    
+    try {
+      const res = await fetch('/api/users/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+      if (res.ok) {
+        setIsOtpSent(true);
+      } else {
+        const errData = await res.json();
+        setOtpError(errData.error || 'Код илгээхэд алдаа гарлаа.');
+      }
+    } catch (err) {
+      console.error('OTP send failed:', err);
+      setOtpError('Сервертэй холбогдоход алдаа гарлаа.');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setOtpError('');
     const formData = new FormData(e.currentTarget);
     const data = Object.fromEntries(formData.entries());
     
@@ -231,9 +262,13 @@ export default function App() {
         setUser(newUser);
         localStorage.setItem('farm_user_id', newUser.id.toString());
         setView('list');
+      } else {
+        const errData = await res.json();
+        setOtpError(errData.error || 'Бүртгэл амжилтгүй боллоо.');
       }
     } catch (err) {
       console.error('Registration failed:', err);
+      setOtpError('Сервертэй холбогдоход алдаа гарлаа.');
     }
   };
 
@@ -558,27 +593,64 @@ export default function App() {
                   </button>
                 </form>
               ) : (
-                <form onSubmit={handleRegister} className="space-y-4 text-left">
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Таны нэр</label>
-                    <input name="name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Бат" />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Фермийн нэр</label>
-                    <input name="farm_name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Баян Ферм" />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">И-мэйл (заавал биш)</label>
-                    <input name="email" type="email" className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="example@mail.com" />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">PIN код (4 оронтой)</label>
-                    <input name="pin_code" type="password" maxLength={4} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="****" />
-                  </div>
-                  <button type="submit" className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98] mt-4">
-                    Бүртгүүлэх
-                  </button>
-                </form>
+                <div className="space-y-4">
+                  {otpError && (
+                    <div className="bg-red-50 text-red-600 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
+                      <AlertCircle size={16} />
+                      {otpError}
+                    </div>
+                  )}
+                  
+                  {!isOtpSent ? (
+                    <form onSubmit={handleSendOtp} className="space-y-4 text-left">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Гар утасны дугаар</label>
+                        <input name="phone" type="tel" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: 88991122" />
+                      </div>
+                      <button 
+                        type="submit" 
+                        disabled={otpLoading}
+                        className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98] disabled:opacity-50"
+                      >
+                        {otpLoading ? 'Түр хүлээнэ үү...' : 'Код авах'}
+                      </button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleRegister} className="space-y-4 text-left">
+                      <input type="hidden" name="phone" value={(document.querySelector('input[name="phone"]') as HTMLInputElement)?.value} />
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Таны нэр</label>
+                        <input name="name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Бат" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Фермийн нэр</label>
+                        <input name="farm_name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Баян Ферм" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">PIN код (4 оронтой)</label>
+                          <input name="pin_code" type="password" maxLength={4} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="****" />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Баталгаажуулах код</label>
+                          <input name="otp_code" maxLength={4} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="****" />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          type="button" 
+                          onClick={() => setIsOtpSent(false)}
+                          className="flex-1 bg-black/5 text-black/60 py-5 rounded-2xl font-bold text-lg hover:bg-black/10 transition-all"
+                        >
+                          Буцах
+                        </button>
+                        <button type="submit" className="flex-[2] bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98]">
+                          Бүртгүүлэх
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
               )}
             </motion.div>
           )}

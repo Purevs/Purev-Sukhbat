@@ -15,9 +15,15 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     farm_name TEXT,
-    email TEXT UNIQUE,
+    phone TEXT UNIQUE,
     pin_code TEXT DEFAULT '0000',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS otp_codes (
+    phone TEXT PRIMARY KEY,
+    code TEXT NOT NULL,
+    expires_at DATETIME NOT NULL
   );
 
   CREATE TABLE IF NOT EXISTS cows (
@@ -50,8 +56,13 @@ db.exec(`
   );
 `);
 
-// Migration: Add pin_code if it doesn't exist
+// Migration: Add phone if it doesn't exist
 const usersInfo = db.prepare("PRAGMA table_info(users)").all() as any[];
+const hasPhone = usersInfo.some(col => col.name === 'phone');
+if (!hasPhone) {
+  db.exec("ALTER TABLE users ADD COLUMN phone TEXT UNIQUE");
+}
+
 const hasPinCode = usersInfo.some(col => col.name === 'pin_code');
 if (!hasPinCode) {
   db.exec("ALTER TABLE users ADD COLUMN pin_code TEXT DEFAULT '0000'");
@@ -88,17 +99,56 @@ async function startServer() {
     res.json(user || null);
   });
 
+  app.post("/api/users/send-otp", (req, res) => {
+    const { phone } = req.body;
+    if (!phone) return res.status(400).json({ error: "Утасны дугаар шаардлагатай." });
+
+    // Generate 4-digit code
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes
+
+    try {
+      db.prepare(`
+        INSERT OR REPLACE INTO otp_codes (phone, code, expires_at)
+        VALUES (?, ?, ?)
+      `).run(phone, code, expiresAt);
+
+      // In a real app, you would send the SMS here.
+      // For this demo, we'll log it to console and return it (for testing convenience)
+      console.log(`OTP for ${phone}: ${code}`);
+      
+      res.json({ success: true, message: "Баталгаажуулах код илгээгдлээ.", debugCode: code });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.post("/api/users/register", (req, res) => {
-    const { name, farm_name, email, pin_code } = req.body;
+    const { name, farm_name, phone, pin_code, otp_code } = req.body;
+    
+    // Verify OTP
+    const otp = db.prepare("SELECT * FROM otp_codes WHERE phone = ? AND code = ?").get(phone, otp_code) as any;
+    if (!otp || new Date(otp.expires_at) < new Date()) {
+      return res.status(400).json({ error: "Баталгаажуулах код буруу эсвэл хугацаа нь дууссан байна." });
+    }
+
     try {
       const info = db.prepare(`
-        INSERT INTO users (name, farm_name, email, pin_code)
+        INSERT INTO users (name, farm_name, phone, pin_code)
         VALUES (?, ?, ?, ?)
-      `).run(name, farm_name, email, pin_code || '0000');
+      `).run(name, farm_name, phone, pin_code || '0000');
+      
+      // Clear OTP
+      db.prepare("DELETE FROM otp_codes WHERE phone = ?").run(phone);
+
       const user = db.prepare("SELECT * FROM users WHERE id = ?").get(info.lastInsertRowid);
       res.json(user);
     } catch (err: any) {
-      res.status(400).json({ error: err.message });
+      if (err.message.includes('UNIQUE constraint failed: users.phone')) {
+        res.status(400).json({ error: "Энэ утасны дугаар аль хэдийн бүртгэгдсэн байна." });
+      } else {
+        res.status(400).json({ error: err.message });
+      }
     }
   });
 

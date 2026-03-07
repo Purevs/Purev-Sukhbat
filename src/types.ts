@@ -2,9 +2,7 @@ export interface User {
   id: number;
   name: string;
   farm_name: string;
-  location?: string;
-  phone?: string;
-  email: string;
+  phone: string;
   pin_code: string;
   created_at: string;
 }
