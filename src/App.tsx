@@ -52,6 +52,8 @@ export default function App() {
   const [landingTab, setLandingTab] = useState<'login' | 'register'>('login');
   const [loginError, setLoginError] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [isTestMode, setIsTestMode] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
   const [registrationType, setRegistrationType] = useState<'cow' | 'calf'>('cow');
@@ -232,7 +234,15 @@ export default function App() {
         body: JSON.stringify({ phone }),
       });
       if (res.ok) {
+        const data = await res.json();
         setIsOtpSent(true);
+        if (data.isTestMode) {
+          setIsTestMode(true);
+          setOtpCode(data.debugCode);
+        } else {
+          setIsTestMode(false);
+          setOtpCode('');
+        }
       } else {
         const errData = await res.json();
         setOtpError(errData.error || 'Код илгээхэд алдаа гарлаа.');
@@ -617,6 +627,13 @@ export default function App() {
                     </form>
                   ) : (
                     <form onSubmit={handleRegister} className="space-y-4 text-left">
+                      {isTestMode && (
+                        <div className="bg-blue-50 border border-blue-200 p-4 rounded-2xl text-blue-800 text-sm mb-4">
+                          <p className="font-bold mb-1">Туршилтын горим:</p>
+                          <p>Таны баталгаажуулах код: <span className="text-xl font-black tracking-widest ml-2">{otpCode}</span></p>
+                          <p className="text-[10px] mt-2 opacity-60">* Бодит SMS илгээхэд Twilio тохиргоо шаардлагатай.</p>
+                        </div>
+                      )}
                       <input type="hidden" name="phone" value={(document.querySelector('input[name="phone"]') as HTMLInputElement)?.value} />
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Таны нэр</label>

@@ -3,6 +3,7 @@ import { createServer as createViteServer } from "vite";
 import Database from "better-sqlite3";
 import path from "path";
 import { fileURLToPath } from "url";
+import { Vonage } from "@vonage/server-sdk";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -76,6 +77,23 @@ if (!hasSession) {
 }
 
 
+// Vonage Client Helper
+let vonageClient: any = null;
+const getVonageClient = () => {
+  const apiKey = process.env.VONAGE_API_KEY;
+  const apiSecret = process.env.VONAGE_API_SECRET;
+  if (apiKey && apiSecret) {
+    if (!vonageClient) {
+      vonageClient = new Vonage({
+        apiKey: apiKey,
+        apiSecret: apiSecret
+      });
+    }
+    return vonageClient;
+  }
+  return null;
+};
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -99,7 +117,7 @@ async function startServer() {
     res.json(user || null);
   });
 
-  app.post("/api/users/send-otp", (req, res) => {
+  app.post("/api/users/send-otp", async (req, res) => {
     const { phone } = req.body;
     if (!phone) return res.status(400).json({ error: "Утасны дугаар шаардлагатай." });
 
@@ -113,11 +131,38 @@ async function startServer() {
         VALUES (?, ?, ?)
       `).run(phone, code, expiresAt);
 
+      // Try to send real SMS if Vonage is configured
+      const vClient = getVonageClient();
+      const vFrom = process.env.VONAGE_BRAND_NAME || "FarmApp";
+
+      let smsSent = false;
+
+      // Try Vonage
+      if (vClient) {
+        try {
+          const formattedPhone = phone.startsWith('+') ? phone : `976${phone}`;
+          await vClient.sms.send({
+            to: formattedPhone,
+            from: vFrom,
+            text: `Фермийн бүртгэлийн баталгаажуулах код: ${code}`
+          });
+          smsSent = true;
+          console.log(`Vonage SMS sent to ${formattedPhone}`);
+        } catch (vErr: any) {
+          console.error("Vonage SMS Error:", vErr.message);
+        }
+      }
+
       // In a real app, you would send the SMS here.
       // For this demo, we'll log it to console and return it (for testing convenience)
       console.log(`OTP for ${phone}: ${code}`);
       
-      res.json({ success: true, message: "Баталгаажуулах код илгээгдлээ.", debugCode: code });
+      res.json({ 
+        success: true, 
+        message: smsSent ? "Баталгаажуулах код илгээгдлээ." : "Баталгаажуулах код үүсгэгдлээ (Туршилтын горим).", 
+        debugCode: code,
+        isTestMode: !smsSent
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
