@@ -631,7 +631,7 @@ export default function App() {
                         <div className="bg-blue-50 border border-blue-200 p-4 rounded-2xl text-blue-800 text-sm mb-4">
                           <p className="font-bold mb-1">Туршилтын горим:</p>
                           <p>Таны баталгаажуулах код: <span className="text-xl font-black tracking-widest ml-2">{otpCode}</span></p>
-                          <p className="text-[10px] mt-2 opacity-60">* Бодит SMS илгээхэд Twilio тохиргоо шаардлагатай.</p>
+                          <p className="text-[10px] mt-2 opacity-60">* Бодит SMS илгээхэд SMS үйлчилгээний тохиргоо шаардлагатай.</p>
                         </div>
                       )}
                       <input type="hidden" name="phone" value={(document.querySelector('input[name="phone"]') as HTMLInputElement)?.value} />
