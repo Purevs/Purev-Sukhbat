@@ -1,98 +1,97 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
-import Database from "better-sqlite3";
+import mysql from "mysql2/promise";
 import path from "path";
 import { fileURLToPath } from "url";
-import { Vonage } from "@vonage/server-sdk";
+import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const db = new Database("farm.db");
+const db = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
 
 // Initialize database
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    farm_name TEXT,
-    phone TEXT UNIQUE,
-    pin_code TEXT DEFAULT '0000',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+async function initDb() {
+  const connection = await db.getConnection();
+  try {
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        farm_name VARCHAR(255),
+        email VARCHAR(255) UNIQUE,
+        pin_code VARCHAR(10) DEFAULT '0000',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
-  CREATE TABLE IF NOT EXISTS otp_codes (
-    phone TEXT PRIMARY KEY,
-    code TEXT NOT NULL,
-    expires_at DATETIME NOT NULL
-  );
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS otp_codes (
+        email VARCHAR(255) PRIMARY KEY,
+        code VARCHAR(10) NOT NULL,
+        expires_at DATETIME NOT NULL
+      )
+    `);
 
-  CREATE TABLE IF NOT EXISTS cows (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    tag_code TEXT NOT NULL,
-    type TEXT DEFAULT 'cow',
-    breed TEXT,
-    age INTEGER,
-    gender TEXT,
-    mother_tag TEXT,
-    birth_date TEXT,
-    calvings INTEGER,
-    last_calving_date TEXT,
-    insemination_date TEXT,
-    image_data TEXT,
-    notes TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-    UNIQUE(user_id, tag_code)
-  );
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS cows (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        tag_code VARCHAR(255) NOT NULL,
+        type VARCHAR(50) DEFAULT 'cow',
+        breed VARCHAR(255),
+        age INT,
+        gender VARCHAR(50),
+        mother_tag VARCHAR(255),
+        birth_date DATE,
+        calvings INT,
+        last_calving_date DATE,
+        insemination_date DATE,
+        image_data LONGTEXT,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+        UNIQUE KEY (user_id, tag_code)
+      )
+    `);
 
-  CREATE TABLE IF NOT EXISTS milk_yields (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    cow_id INTEGER NOT NULL,
-    amount REAL NOT NULL,
-    date TEXT NOT NULL,
-    session TEXT DEFAULT 'morning', -- 'morning' or 'evening'
-    FOREIGN KEY (cow_id) REFERENCES cows (id) ON DELETE CASCADE
-  );
-`);
-
-// Migration: Add phone if it doesn't exist
-const usersInfo = db.prepare("PRAGMA table_info(users)").all() as any[];
-const hasPhone = usersInfo.some(col => col.name === 'phone');
-if (!hasPhone) {
-  db.exec("ALTER TABLE users ADD COLUMN phone TEXT UNIQUE");
-}
-
-const hasPinCode = usersInfo.some(col => col.name === 'pin_code');
-if (!hasPinCode) {
-  db.exec("ALTER TABLE users ADD COLUMN pin_code TEXT DEFAULT '0000'");
-}
-
-// Migration: Add session if it doesn't exist
-const milkYieldsInfo = db.prepare("PRAGMA table_info(milk_yields)").all() as any[];
-const hasSession = milkYieldsInfo.some(col => col.name === 'session');
-if (!hasSession) {
-  db.exec("ALTER TABLE milk_yields ADD COLUMN session TEXT DEFAULT 'morning'");
-}
-
-
-// Vonage Client Helper
-let vonageClient: any = null;
-const getVonageClient = () => {
-  const apiKey = process.env.VONAGE_API_KEY;
-  const apiSecret = process.env.VONAGE_API_SECRET;
-  if (apiKey && apiSecret) {
-    if (!vonageClient) {
-      vonageClient = new Vonage({
-        apiKey: apiKey,
-        apiSecret: apiSecret
-      });
-    }
-    return vonageClient;
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS milk_yields (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        cow_id INT NOT NULL,
+        amount DOUBLE NOT NULL,
+        date DATE NOT NULL,
+        session VARCHAR(20) DEFAULT 'morning',
+        FOREIGN KEY (cow_id) REFERENCES cows (id) ON DELETE CASCADE
+      )
+    `);
+  } finally {
+    connection.release();
   }
-  return null;
-};
+}
+initDb();
+
+// Migration code removed for MySQL
+
+// Nodemailer Transporter
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
 
 async function startServer() {
   const app = express();
@@ -101,134 +100,149 @@ async function startServer() {
   app.use(express.json({ limit: '10mb' }));
 
   // User Routes
-  app.get("/api/users", (req, res) => {
-    const users = db.prepare("SELECT * FROM users ORDER BY created_at DESC").all();
-    res.json(users);
+  app.get("/api/users", async (req, res) => {
+    try {
+      const [users] = await db.execute("SELECT * FROM users ORDER BY created_at DESC");
+      res.json(users);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
-  app.get("/api/users/me", (req, res) => {
+  app.get("/api/users/me", async (req, res) => {
     const userId = req.query.userId;
-    let user;
-    if (userId) {
-      user = db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
-    } else {
-      user = db.prepare("SELECT * FROM users LIMIT 1").get();
+    try {
+      let user;
+      if (userId) {
+        const [rows] = await db.execute("SELECT * FROM users WHERE id = ?", [userId]);
+        user = (rows as any[])[0];
+      } else {
+        const [rows] = await db.execute("SELECT * FROM users LIMIT 1");
+        user = (rows as any[])[0];
+      }
+      res.json(user || null);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
-    res.json(user || null);
   });
 
   app.post("/api/users/send-otp", async (req, res) => {
-    const { phone } = req.body;
-    if (!phone) return res.status(400).json({ error: "Утасны дугаар шаардлагатай." });
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Имэйл хаяг шаардлагатай." });
 
     // Generate 4-digit code
     const code = Math.floor(1000 + Math.random() * 9000).toString();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
     try {
-      db.prepare(`
-        INSERT OR REPLACE INTO otp_codes (phone, code, expires_at)
+      await db.execute(`
+        INSERT INTO otp_codes (email, code, expires_at)
         VALUES (?, ?, ?)
-      `).run(phone, code, expiresAt);
+        ON DUPLICATE KEY UPDATE code = VALUES(code), expires_at = VALUES(expires_at)
+      `, [email, code, expiresAt]);
 
-      // Try to send real SMS if Vonage is configured
-      const vClient = getVonageClient();
-      const vFrom = process.env.VONAGE_BRAND_NAME || "FarmApp";
-
-      let smsSent = false;
-
-      // Try Vonage
-      if (vClient) {
+      // Try to send email if Gmail is configured
+      let emailSent = false;
+      if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
         try {
-          const formattedPhone = phone.startsWith('+') ? phone : `976${phone}`;
-          await vClient.sms.send({
-            to: formattedPhone,
-            from: vFrom,
+          await transporter.sendMail({
+            from: process.env.GMAIL_USER,
+            to: email,
+            subject: 'Фермийн бүртгэлийн баталгаажуулах код',
             text: `Фермийн бүртгэлийн баталгаажуулах код: ${code}`
           });
-          smsSent = true;
-          console.log(`Vonage SMS sent to ${formattedPhone}`);
-        } catch (vErr: any) {
-          console.error("Vonage SMS Error:", vErr.message);
+          emailSent = true;
+          console.log(`Email sent to ${email}`);
+        } catch (eErr: any) {
+          console.error("Email Error:", eErr.message);
         }
       }
 
-      // In a real app, you would send the SMS here.
-      // For this demo, we'll log it to console and return it (for testing convenience)
-      console.log(`OTP for ${phone}: ${code}`);
+      console.log(`OTP for ${email}: ${code}`);
       
       res.json({ 
         success: true, 
-        message: smsSent ? "Баталгаажуулах код илгээгдлээ." : "Баталгаажуулах код үүсгэгдлээ (Туршилтын горим).", 
+        message: emailSent ? "Баталгаажуулах код имэйл рүү илгээгдлээ." : "Баталгаажуулах код үүсгэгдлээ (Туршилтын горим).", 
         debugCode: code,
-        isTestMode: !smsSent
+        isTestMode: !emailSent
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
-  app.post("/api/users/register", (req, res) => {
-    const { name, farm_name, phone, pin_code, otp_code } = req.body;
+  app.post("/api/users/register", async (req, res) => {
+    const { name, farm_name, email, pin_code, otp_code } = req.body;
     
     // Verify OTP
-    const otp = db.prepare("SELECT * FROM otp_codes WHERE phone = ? AND code = ?").get(phone, otp_code) as any;
-    if (!otp || new Date(otp.expires_at) < new Date()) {
-      return res.status(400).json({ error: "Баталгаажуулах код буруу эсвэл хугацаа нь дууссан байна." });
-    }
-
     try {
-      const info = db.prepare(`
-        INSERT INTO users (name, farm_name, phone, pin_code)
+      const [rows] = await db.execute("SELECT * FROM otp_codes WHERE email = ? AND code = ?", [email, otp_code]);
+      const otp = (rows as any[])[0];
+      if (!otp || new Date(otp.expires_at) < new Date()) {
+        return res.status(400).json({ error: "Баталгаажуулах код буруу эсвэл хугацаа нь дууссан байна." });
+      }
+
+      const [result] = await db.execute(`
+        INSERT INTO users (name, farm_name, email, pin_code)
         VALUES (?, ?, ?, ?)
-      `).run(name, farm_name, phone, pin_code || '0000');
+      `, [name, farm_name, email, pin_code || '0000']);
       
       // Clear OTP
-      db.prepare("DELETE FROM otp_codes WHERE phone = ?").run(phone);
+      await db.execute("DELETE FROM otp_codes WHERE email = ?", [email]);
 
-      const user = db.prepare("SELECT * FROM users WHERE id = ?").get(info.lastInsertRowid);
-      res.json(user);
+      const [users] = await db.execute("SELECT * FROM users WHERE id = ?", [(result as any).insertId]);
+      res.json((users as any[])[0]);
     } catch (err: any) {
-      if (err.message.includes('UNIQUE constraint failed: users.phone')) {
-        res.status(400).json({ error: "Энэ утасны дугаар аль хэдийн бүртгэгдсэн байна." });
+      if (err.code === 'ER_DUP_ENTRY') {
+        res.status(400).json({ error: "Энэ имэйл хаяг аль хэдийн бүртгэгдсэн байна." });
       } else {
         res.status(400).json({ error: err.message });
       }
     }
   });
 
-  app.post("/api/users/login", (req, res) => {
+
+  app.post("/api/users/login", async (req, res) => {
     const { farm_name, pin_code } = req.body;
-    const user = db.prepare("SELECT * FROM users WHERE farm_name = ? AND pin_code = ?").get(farm_name, pin_code);
-    if (user) {
-      res.json(user);
-    } else {
-      res.status(401).json({ error: "Фермийн нэр эсвэл PIN код буруу байна." });
+    try {
+      const [rows] = await db.execute("SELECT * FROM users WHERE farm_name = ? AND pin_code = ?", [farm_name, pin_code]);
+      const user = (rows as any[])[0];
+      if (user) {
+        res.json(user);
+      } else {
+        res.status(401).json({ error: "Фермийн нэр эсвэл PIN код буруу байна." });
+      }
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
   });
 
   // API Routes
-  app.get("/api/cows", (req, res) => {
+  app.get("/api/cows", async (req, res) => {
     const userId = req.query.userId;
     if (!userId) return res.status(400).json({ error: "userId required" });
-    const cows = db.prepare("SELECT * FROM cows WHERE user_id = ? ORDER BY created_at DESC").all(userId);
-    res.json(cows);
+    try {
+      const [cows] = await db.execute("SELECT * FROM cows WHERE user_id = ? ORDER BY created_at DESC", [userId]);
+      res.json(cows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
-  app.post("/api/cows", (req, res) => {
+  app.post("/api/cows", async (req, res) => {
     const { 
       user_id, tag_code, type, breed, age, gender, mother_tag, birth_date, 
       calvings, last_calving_date, insemination_date, image_data, notes 
     } = req.body;
     if (!user_id) return res.status(400).json({ error: "user_id required" });
     try {
-      const info = db.prepare(`
+      const [result] = await db.execute(`
         INSERT INTO cows (
           user_id, tag_code, type, breed, age, gender, mother_tag, birth_date, 
           calvings, last_calving_date, insemination_date, image_data, notes
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
+      `, [
         user_id,
         tag_code, 
         type || 'cow',
@@ -242,38 +256,45 @@ async function startServer() {
         insemination_date || null, 
         image_data || null,
         notes || null
-      );
-      res.json({ id: info.lastInsertRowid });
+      ]);
+      res.json({ id: (result as any).insertId });
     } catch (err: any) {
       res.status(400).json({ error: err.message });
     }
   });
 
-  app.get("/api/cows/:id", (req, res) => {
-    const cow = db.prepare("SELECT * FROM cows WHERE id = ?").get(req.params.id);
-    if (!cow) return res.status(404).json({ error: "Cow not found" });
-    
-    const yields = db.prepare("SELECT * FROM milk_yields WHERE cow_id = ? ORDER BY date DESC").all(req.params.id);
-    res.json({ ...cow, yields });
+  app.get("/api/cows/:id", async (req, res) => {
+    try {
+      const [rows] = await db.execute("SELECT * FROM cows WHERE id = ?", [req.params.id]);
+      const cow = (rows as any[])[0];
+      if (!cow) return res.status(404).json({ error: "Cow not found" });
+      
+      const [yields] = await db.execute("SELECT * FROM milk_yields WHERE cow_id = ? ORDER BY date DESC", [req.params.id]);
+      res.json({ ...cow, yields });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
-  app.post("/api/milk", (req, res) => {
+  app.post("/api/milk", async (req, res) => {
     const { cow_id, amount, date, session } = req.body;
     try {
-      const existing = db.prepare(`
+      const [rows] = await db.execute(`
         SELECT id, amount FROM milk_yields 
         WHERE cow_id = ? AND date = ? AND session = ?
-      `).get(cow_id, date, session || 'morning') as { id: number, amount: number } | undefined;
+      `, [cow_id, date, session || 'morning']);
+      
+      const existing = (rows as any[])[0];
 
       if (existing) {
-        db.prepare(`
+        await db.execute(`
           UPDATE milk_yields SET amount = amount + ? WHERE id = ?
-        `).run(amount, existing.id);
+        `, [amount, existing.id]);
       } else {
-        db.prepare(`
+        await db.execute(`
           INSERT INTO milk_yields (cow_id, amount, date, session)
           VALUES (?, ?, ?, ?)
-        `).run(cow_id, amount, date, session || 'morning');
+        `, [cow_id, amount, date, session || 'morning']);
       }
       res.json({ success: true });
     } catch (err: any) {
@@ -281,13 +302,16 @@ async function startServer() {
     }
   });
 
-  app.delete("/api/cows/:id", (req, res) => {
-    // In a real app, check user_id here
-    db.prepare("DELETE FROM cows WHERE id = ?").run(req.params.id);
-    res.json({ success: true });
+  app.delete("/api/cows/:id", async (req, res) => {
+    try {
+      await db.execute("DELETE FROM cows WHERE id = ?", [req.params.id]);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
-  app.patch("/api/cows/:id", (req, res) => {
+  app.patch("/api/cows/:id", async (req, res) => {
     const { id } = req.params;
     const { 
       tag_code, type, breed, age, gender, mother_tag, birth_date, 
@@ -295,7 +319,7 @@ async function startServer() {
     } = req.body;
 
     try {
-      db.prepare(`
+      await db.execute(`
         UPDATE cows SET 
           tag_code = COALESCE(?, tag_code),
           type = COALESCE(?, type),
@@ -310,11 +334,11 @@ async function startServer() {
           image_data = COALESCE(?, image_data),
           notes = COALESCE(?, notes)
         WHERE id = ?
-      `).run(
+      `, [
         tag_code, type, breed, age, gender, mother_tag, birth_date,
         calvings, last_calving_date, insemination_date, image_data, notes,
         id
-      );
+      ]);
       res.json({ success: true });
     } catch (err: any) {
       res.status(400).json({ error: err.message });
@@ -335,7 +359,7 @@ async function startServer() {
     });
   }
 
-  app.get("/api/reports/milk", (req, res) => {
+  app.get("/api/reports/milk", async (req, res) => {
     const { userId, startDate, endDate } = req.query;
     if (!userId) return res.status(400).json({ error: "userId required" });
     
@@ -359,10 +383,10 @@ async function startServer() {
     query += " ORDER BY m.date DESC, m.session ASC";
     
     try {
-      const yields = db.prepare(query).all(...params);
+      const [yields] = await db.execute(query, params);
       res.json(yields);
     } catch (err: any) {
-      res.status(400).json({ error: err.message });
+      res.status(500).json({ error: err.message });
     }
   });
 

@@ -50,12 +50,8 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [view, setView] = useState<'list' | 'add' | 'detail' | 'scan' | 'landing' | 'reports'>('list');
   const [landingTab, setLandingTab] = useState<'login' | 'register'>('login');
-  const [loginError, setLoginError] = useState('');
-  const [isOtpSent, setIsOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [isTestMode, setIsTestMode] = useState(false);
-  const [otpError, setOtpError] = useState('');
-  const [otpLoading, setOtpLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
   const [registrationType, setRegistrationType] = useState<'cow' | 'calf'>('cow');
   const [cows, setCows] = useState<Cow[]>([]);
   const [selectedCowId, setSelectedCowId] = useState<number | null>(null);
@@ -94,8 +90,13 @@ export default function App() {
   };
 
   useEffect(() => {
-    const savedUserId = localStorage.getItem('farm_user_id');
-    checkUser(savedUserId);
+    const userId = localStorage.getItem('farm_user_id');
+    if (userId) {
+      checkUser(userId);
+    } else {
+      setLoading(false);
+      setView('landing');
+    }
   }, []);
 
   useEffect(() => {
@@ -193,92 +194,37 @@ export default function App() {
     }
   };
 
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoginError('');
+    setAuthError('');
+    setAuthLoading(true);
     const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData.entries());
     
     try {
-      const res = await fetch('/api/users/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (res.ok) {
-        const loggedInUser = await res.json();
-        setUser(loggedInUser);
-        localStorage.setItem('farm_user_id', loggedInUser.id.toString());
-        setView('list');
-      } else {
-        const errData = await res.json();
-        setLoginError(errData.error || 'Нэвтрэхэд алдаа гарлаа.');
-      }
-    } catch (err) {
-      console.error('Login failed:', err);
-      setLoginError('Сервертэй холбогдоход алдаа гарлаа.');
-    }
-  };
-
-  const handleSendOtp = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setOtpError('');
-    setOtpLoading(true);
-    const formData = new FormData(e.currentTarget);
-    const phone = formData.get('phone') as string;
-    
-    try {
-      const res = await fetch('/api/users/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
-      });
-      if (res.ok) {
+      if (landingTab === 'login') {
+        const farm_name = formData.get('farm_name') as string;
+        const pin_code = formData.get('pin_code') as string;
+        const res = await fetch('/api/users/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ farm_name, pin_code }),
+        });
         const data = await res.json();
-        setIsOtpSent(true);
-        if (data.isTestMode) {
-          setIsTestMode(true);
-          setOtpCode(data.debugCode);
+        if (res.ok) {
+          setUser(data);
+          localStorage.setItem('farm_user_id', data.id.toString());
+          setView('list');
         } else {
-          setIsTestMode(false);
-          setOtpCode('');
+          setAuthError(data.error);
         }
       } else {
-        const errData = await res.json();
-        setOtpError(errData.error || 'Код илгээхэд алдаа гарлаа.');
+        // Registration logic will be implemented next
+        setAuthError('Registration is not implemented yet.');
       }
-    } catch (err) {
-      console.error('OTP send failed:', err);
-      setOtpError('Сервертэй холбогдоход алдаа гарлаа.');
+    } catch (err: any) {
+      setAuthError('An error occurred. Please try again.');
     } finally {
-      setOtpLoading(false);
-    }
-  };
-
-  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setOtpError('');
-    const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData.entries());
-    
-    try {
-      const res = await fetch('/api/users/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (res.ok) {
-        const newUser = await res.json();
-        setUser(newUser);
-        localStorage.setItem('farm_user_id', newUser.id.toString());
-        setView('list');
-      } else {
-        const errData = await res.json();
-        setOtpError(errData.error || 'Бүртгэл амжилтгүй боллоо.');
-      }
-    } catch (err) {
-      console.error('Registration failed:', err);
-      setOtpError('Сервертэй холбогдоход алдаа гарлаа.');
+      setAuthLoading(false);
     }
   };
 
@@ -583,11 +529,11 @@ export default function App() {
               </div>
               
               {landingTab === 'login' ? (
-                <form onSubmit={handleLogin} className="space-y-4 text-left">
-                  {loginError && (
+                <form onSubmit={handleAuth} className="space-y-4 text-left">
+                  {authError && (
                     <div className="bg-red-50 text-red-600 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
                       <AlertCircle size={16} />
-                      {loginError}
+                      {authError}
                     </div>
                   )}
                   <div>
@@ -604,69 +550,30 @@ export default function App() {
                 </form>
               ) : (
                 <div className="space-y-4">
-                  {otpError && (
+                  {authError && (
                     <div className="bg-red-50 text-red-600 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
                       <AlertCircle size={16} />
-                      {otpError}
+                      {authError}
                     </div>
                   )}
                   
-                  {!isOtpSent ? (
-                    <form onSubmit={handleSendOtp} className="space-y-4 text-left">
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Гар утасны дугаар</label>
-                        <input name="phone" type="tel" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: 88991122" />
-                      </div>
-                      <button 
-                        type="submit" 
-                        disabled={otpLoading}
-                        className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98] disabled:opacity-50"
-                      >
-                        {otpLoading ? 'Түр хүлээнэ үү...' : 'Код авах'}
-                      </button>
-                    </form>
-                  ) : (
-                    <form onSubmit={handleRegister} className="space-y-4 text-left">
-                      {isTestMode && (
-                        <div className="bg-blue-50 border border-blue-200 p-4 rounded-2xl text-blue-800 text-sm mb-4">
-                          <p className="font-bold mb-1">Туршилтын горим:</p>
-                          <p>Таны баталгаажуулах код: <span className="text-xl font-black tracking-widest ml-2">{otpCode}</span></p>
-                          <p className="text-[10px] mt-2 opacity-60">* Бодит SMS илгээхэд SMS үйлчилгээний тохиргоо шаардлагатай.</p>
-                        </div>
-                      )}
-                      <input type="hidden" name="phone" value={(document.querySelector('input[name="phone"]') as HTMLInputElement)?.value} />
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Таны нэр</label>
-                        <input name="name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Бат" />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Фермийн нэр</label>
-                        <input name="farm_name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Баян Ферм" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">PIN код (4 оронтой)</label>
-                          <input name="pin_code" type="password" maxLength={4} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="****" />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Баталгаажуулах код</label>
-                          <input name="otp_code" maxLength={4} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="****" />
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button 
-                          type="button" 
-                          onClick={() => setIsOtpSent(false)}
-                          className="flex-1 bg-black/5 text-black/60 py-5 rounded-2xl font-bold text-lg hover:bg-black/10 transition-all"
-                        >
-                          Буцах
-                        </button>
-                        <button type="submit" className="flex-[2] bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98]">
-                          Бүртгүүлэх
-                        </button>
-                      </div>
-                    </form>
-                  )}
+                  <form onSubmit={handleAuth} className="space-y-4 text-left">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Имэйл хаяг</label>
+                      <input name="email" type="email" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: bat@example.com" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Нууц үг</label>
+                      <input name="password" type="password" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="••••••••" />
+                    </div>
+                    <button 
+                      type="submit" 
+                      disabled={authLoading}
+                      className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                      {authLoading ? 'Түр хүлээнэ үү...' : (landingTab === 'login' ? 'Нэвтрэх' : 'Бүртгүүлэх')}
+                    </button>
+                  </form>
                 </div>
               )}
             </motion.div>
