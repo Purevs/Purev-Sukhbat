@@ -194,6 +194,32 @@ export default function App() {
     }
   };
 
+  const sendOtp = async () => {
+    const email = document.querySelector<HTMLInputElement>('input[name="email"]')?.value;
+    if (!email) {
+      setAuthError('Имэйл хаягаа оруулна уу.');
+      return;
+    }
+    setAuthLoading(true);
+    try {
+      const res = await fetch('/api/users/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAuthError(data.message);
+      } else {
+        setAuthError(data.error);
+      }
+    } catch (err) {
+      setAuthError('Алдаа гарлаа. Дахин оролдоно уу.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setAuthError('');
@@ -218,8 +244,25 @@ export default function App() {
           setAuthError(data.error);
         }
       } else {
-        // Registration logic will be implemented next
-        setAuthError('Registration is not implemented yet.');
+        const name = formData.get('name') as string;
+        const farm_name = formData.get('farm_name') as string;
+        const email = formData.get('email') as string;
+        const pin_code = formData.get('pin_code') as string;
+        const otp_code = formData.get('otp_code') as string;
+        
+        const res = await fetch('/api/users/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, farm_name, email, pin_code, otp_code }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setUser(data);
+          localStorage.setItem('farm_user_id', data.id.toString());
+          setView('list');
+        } else {
+          setAuthError(data.error);
+        }
       }
     } catch (err: any) {
       setAuthError('An error occurred. Please try again.');
@@ -559,19 +602,34 @@ export default function App() {
                   
                   <form onSubmit={handleAuth} className="space-y-4 text-left">
                     <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Нэр</label>
+                      <input name="name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Бат" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Фермийн нэр</label>
+                      <input name="farm_name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Баян Ферм" />
+                    </div>
+                    <div>
                       <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Имэйл хаяг</label>
                       <input name="email" type="email" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: bat@example.com" />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Нууц үг</label>
-                      <input name="password" type="password" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="••••••••" />
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">PIN код</label>
+                      <input name="pin_code" type="password" maxLength={4} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="****" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Баталгаажуулах код (OTP)</label>
+                      <div className="flex gap-2">
+                        <input name="otp_code" className="flex-1 p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="1234" />
+                        <button type="button" onClick={sendOtp} className="bg-[#5A5A40] text-white px-4 rounded-2xl text-xs font-bold">Код авах</button>
+                      </div>
                     </div>
                     <button 
                       type="submit" 
                       disabled={authLoading}
                       className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98] disabled:opacity-50"
                     >
-                      {authLoading ? 'Түр хүлээнэ үү...' : (landingTab === 'login' ? 'Нэвтрэх' : 'Бүртгүүлэх')}
+                      {authLoading ? 'Түр хүлээнэ үү...' : 'Бүртгүүлэх'}
                     </button>
                   </form>
                 </div>
