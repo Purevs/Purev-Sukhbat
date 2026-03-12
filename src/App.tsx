@@ -460,7 +460,7 @@ export default function App() {
       <header className="bg-white border-b border-[#141414]/10 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {view !== 'list' && view !== 'register' && view !== 'userSelect' && (
+            {view !== 'list' && view !== 'register' && view !== 'userSelect' && view !== 'landing' && (
               <button 
                 onClick={() => {
                   setView('list');
