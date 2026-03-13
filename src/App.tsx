@@ -550,88 +550,87 @@ export default function App() {
                 <p className="text-black/50 text-sm">Фермийнхээ мэдээллийг хялбархан хянана уу.</p>
               </div>
 
-              <div className="flex p-1 bg-[#F5F5F0] rounded-2xl">
-                <button 
-                  onClick={() => setLandingTab('login')}
-                  className={cn(
-                    "flex-1 py-3 rounded-xl text-sm font-bold transition-all",
-                    landingTab === 'login' ? "bg-white text-[#5A5A40] shadow-sm" : "text-black/40"
-                  )}
-                >
-                  Нэвтрэх
-                </button>
-                <button 
-                  onClick={() => setLandingTab('register')}
-                  className={cn(
-                    "flex-1 py-3 rounded-xl text-sm font-bold transition-all",
-                    landingTab === 'register' ? "bg-white text-[#5A5A40] shadow-sm" : "text-black/40"
-                  )}
-                >
-                  Бүртгүүлэх
-                </button>
-              </div>
-              
-              {landingTab === 'login' ? (
-                <form onSubmit={handleAuth} className="space-y-4 text-left">
-                  {authError && (
-                    <div className="bg-red-50 text-red-600 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
-                      <AlertCircle size={16} />
-                      {authError}
-                    </div>
-                  )}
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Фермийн нэр</label>
-                    <input name="farm_name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Баян Ферм" />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">PIN код</label>
-                    <input name="pin_code" type="password" maxLength={4} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="****" />
-                  </div>
-                  <button type="submit" className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98] mt-4">
+              {landingTab === null ? (
+                <div className="space-y-4">
+                  <button 
+                    onClick={() => setLandingTab('login')}
+                    className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98]"
+                  >
                     Нэвтрэх
                   </button>
-                </form>
+                  <button 
+                    onClick={() => setLandingTab('register')}
+                    className="w-full bg-white text-[#5A5A40] py-5 rounded-2xl font-bold text-lg shadow-lg border border-[#5A5A40] hover:bg-[#F5F5F0] transition-all active:scale-[0.98]"
+                  >
+                    Бүртгүүлэх
+                  </button>
+                </div>
               ) : (
                 <div className="space-y-4">
-                  {authError && (
-                    <div className="bg-red-50 text-red-600 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
-                      <AlertCircle size={16} />
-                      {authError}
-                    </div>
-                  )}
-                  
-                  <form onSubmit={handleAuth} className="space-y-4 text-left">
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Нэр</label>
-                      <input name="name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Бат" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Фермийн нэр</label>
-                      <input name="farm_name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Баян Ферм" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Имэйл хаяг</label>
-                      <input name="email" type="email" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: bat@example.com" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">PIN код</label>
-                      <input name="pin_code" type="password" maxLength={4} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="****" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Баталгаажуулах код (OTP)</label>
-                      <div className="flex gap-2">
-                        <input name="otp_code" className="flex-1 p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="1234" />
-                        <button type="button" onClick={sendOtp} className="bg-[#5A5A40] text-white px-4 rounded-2xl text-xs font-bold">Код авах</button>
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-bold">{landingTab === 'login' ? 'Нэвтрэх' : 'Бүртгүүлэх'}</h3>
+                    <button onClick={() => setLandingTab(null)} className="text-sm text-black/40 hover:text-black">Буцах</button>
+                  </div>
+                  {landingTab === 'login' ? (
+                    <form onSubmit={handleAuth} className="space-y-4 text-left">
+                      {authError && (
+                        <div className="bg-red-50 text-red-600 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
+                          <AlertCircle size={16} />
+                          {authError}
+                        </div>
+                      )}
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Фермийн нэр</label>
+                        <input name="farm_name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Баян Ферм" />
                       </div>
-                    </div>
-                    <button 
-                      type="submit" 
-                      disabled={authLoading}
-                      className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98] disabled:opacity-50"
-                    >
-                      {authLoading ? 'Түр хүлээнэ үү...' : 'Бүртгүүлэх'}
-                    </button>
-                  </form>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">PIN код</label>
+                        <input name="pin_code" type="password" maxLength={4} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="****" />
+                      </div>
+                      <button type="submit" className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98] mt-4">
+                        Нэвтрэх
+                      </button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleAuth} className="space-y-4 text-left">
+                      {authError && (
+                        <div className="bg-red-50 text-red-600 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
+                          <AlertCircle size={16} />
+                          {authError}
+                        </div>
+                      )}
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Нэр</label>
+                        <input name="name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Бат" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Фермийн нэр</label>
+                        <input name="farm_name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Баян Ферм" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Имэйл хаяг</label>
+                        <input name="email" type="email" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: bat@example.com" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">PIN код</label>
+                        <input name="pin_code" type="password" maxLength={4} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="****" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Баталгаажуулах код (OTP)</label>
+                        <div className="flex gap-2">
+                          <input name="otp_code" className="flex-1 p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="1234" />
+                          <button type="button" onClick={sendOtp} className="bg-[#5A5A40] text-white px-4 rounded-2xl text-xs font-bold">Код авах</button>
+                        </div>
+                      </div>
+                      <button 
+                        type="submit" 
+                        disabled={authLoading}
+                        className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98] disabled:opacity-50"
+                      >
+                        {authLoading ? 'Түр хүлээнэ үү...' : 'Бүртгүүлэх'}
+                      </button>
+                    </form>
+                  )}
                 </div>
               )}
             </motion.div>
