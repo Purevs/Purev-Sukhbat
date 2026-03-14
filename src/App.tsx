@@ -220,6 +220,46 @@ export default function App() {
     }
   };
 
+  const handleSendOtp = async () => {
+    const emailInput = document.getElementsByName('email')[0] as HTMLInputElement;
+    const email = emailInput.value;
+    if (!email) {
+      setAuthError('Имэйл хаягаа оруулна уу.');
+      return;
+    }
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      // Generate OTP
+      const code = Math.floor(1000 + Math.random() * 9000).toString();
+      
+      // Save OTP
+      await addDoc(collection(db, 'otps'), {
+        email,
+        code,
+        expires_at: new Date(Date.now() + 10 * 60000).toISOString()
+      });
+      
+      // Trigger email
+      await addDoc(collection(db, 'mail'), {
+        to: email,
+        message: {
+          subject: 'Таны баталгаажуулах код',
+          text: `Таны баталгаажуулах код: ${code}`
+        }
+      });
+      
+      setOtpSent(true);
+      setPendingOtp(code);
+      setAuthError('Код таны имэйл рүү илгээгдлээ.');
+    } catch (err) {
+      console.error('Failed to send OTP:', err);
+      setAuthError('Алдаа гарлаа. Дахин оролдоно уу.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   // sendOtp function removed as backend API is no longer available.
 
   const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -256,54 +296,29 @@ export default function App() {
         const pin_code = formData.get('pin_code') as string;
         const otp_code = formData.get('otp_code') as string;
         
-        if (!otpSent) {
-          // Generate OTP
-          const code = Math.floor(1000 + Math.random() * 9000).toString();
+        // Verify OTP
+        if (otp_code === pendingOtp) {
+          const q = query(collection(db, 'users'), where('farm_name', '==', farm_name));
+          const querySnapshot = await getDocs(q);
           
-          // Save OTP
-          await addDoc(collection(db, 'otps'), {
-            email,
-            code,
-            expires_at: new Date(Date.now() + 10 * 60000).toISOString()
-          });
-          
-          // Trigger email
-          await addDoc(collection(db, 'mail'), {
-            to: email,
-            message: {
-              subject: 'Таны баталгаажуулах код',
-              text: `Таны баталгаажуулах код: ${code}`
-            }
-          });
-          
-          setOtpSent(true);
-          setPendingOtp(code);
-          setAuthError('Код таны имэйл рүү илгээгдлээ.');
-        } else {
-          // Verify OTP
-          if (otp_code === pendingOtp) {
-            const q = query(collection(db, 'users'), where('farm_name', '==', farm_name));
-            const querySnapshot = await getDocs(q);
-            
-            if (!querySnapshot.empty) {
-              setAuthError('Фермийн нэр аль хэдийн бүртгэгдсэн байна.');
-            } else {
-              const newUser = {
-                name,
-                farm_name,
-                email,
-                pin_code,
-                created_at: serverTimestamp(),
-                is_approved: false
-              };
-              const docRef = await addDoc(collection(db, 'users'), newUser);
-              setUser({ id: docRef.id, ...newUser } as unknown as User);
-              localStorage.setItem('farm_user_id', docRef.id);
-              setView('list');
-            }
+          if (!querySnapshot.empty) {
+            setAuthError('Фермийн нэр аль хэдийн бүртгэгдсэн байна.');
           } else {
-            setAuthError('Баталгаажуулах код буруу байна.');
+            const newUser = {
+              name,
+              farm_name,
+              email,
+              pin_code,
+              created_at: serverTimestamp(),
+              is_approved: false
+            };
+            const docRef = await addDoc(collection(db, 'users'), newUser);
+            setUser({ id: docRef.id, ...newUser } as unknown as User);
+            localStorage.setItem('farm_user_id', docRef.id);
+            setView('list');
           }
+        } else {
+          setAuthError('Баталгаажуулах код буруу байна.');
         }
       }
     } catch (err) {
@@ -706,17 +721,20 @@ export default function App() {
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Баталгаажуулах код (OTP)</label>
                         <div className="flex gap-2">
-                          <input name="otp_code" className="flex-1 p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="1234" />
-                          {/* Код авах товчийг түр хассан */}
+                          {!otpSent ? (
+                            <button type="button" onClick={handleSendOtp} className="w-full bg-[#5A5A40] text-white py-4 rounded-2xl font-bold hover:bg-[#4A4A30] transition-all">
+                              {authLoading ? 'Илгээж байна...' : 'Код авах'}
+                            </button>
+                          ) : (
+                            <>
+                              <input name="otp_code" className="flex-1 p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="1234" />
+                              <button type="submit" className="bg-[#5A5A40] text-white px-6 py-4 rounded-2xl font-bold hover:bg-[#4A4A30] transition-all">
+                                {authLoading ? 'Бүртгэж байна...' : 'Бүртгүүлэх'}
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
-                      <button 
-                        type="submit" 
-                        disabled={authLoading}
-                        className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98] disabled:opacity-50"
-                      >
-                        {authLoading ? 'Түр хүлээнэ үү...' : 'Бүртгүүлэх'}
-                      </button>
                     </form>
                   )}
                 </div>
