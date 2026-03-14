@@ -100,7 +100,7 @@ service cloud.firestore {
     }
 
     match /mail/{mailId} {
-      allow create: if isAuthenticated() && request.resource.data.to is string && request.resource.data.to.size() < 100 && request.resource.data.message.text is string && request.resource.data.message.text.size() < 1000;
+      allow create: if request.resource.data.to is string && request.resource.data.to.size() < 100 && request.resource.data.message.text is string && request.resource.data.message.text.size() < 1000;
     }
   }
 }
