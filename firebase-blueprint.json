@@ -36,17 +36,32 @@
       },
       "required": ["user_id", "tag_code"]
     },
-    "MilkYield": {
-      "title": "MilkYield",
-      "description": "Daily milk yield record",
+    "OTP": {
+      "title": "OTP",
+      "description": "One-time password for registration",
       "type": "object",
       "properties": {
-        "cow_id": { "type": "string" },
-        "amount": { "type": "number" },
-        "date": { "type": "string", "format": "date" },
-        "session": { "type": "string" }
+        "email": { "type": "string", "format": "email" },
+        "code": { "type": "string" },
+        "expires_at": { "type": "string", "format": "date-time" }
       },
-      "required": ["cow_id", "amount", "date"]
+      "required": ["email", "code", "expires_at"]
+    },
+    "Mail": {
+      "title": "Mail",
+      "description": "Email trigger for Firebase extension",
+      "type": "object",
+      "properties": {
+        "to": { "type": "string", "format": "email" },
+        "message": {
+          "type": "object",
+          "properties": {
+            "subject": { "type": "string" },
+            "text": { "type": "string" }
+          }
+        }
+      },
+      "required": ["to", "message"]
     }
   },
   "firestore": {
@@ -61,6 +76,14 @@
     "users/{userId}/cows/{cowId}/milkYields/{yieldId}": {
       "schema": { "$ref": "MilkYield" },
       "description": "Milk yields for a cow"
+    },
+    "otps/{otpId}": {
+      "schema": { "$ref": "OTP" },
+      "description": "OTP codes"
+    },
+    "mail/{mailId}": {
+      "schema": { "$ref": "Mail" },
+      "description": "Emails to be sent"
     }
   }
 }

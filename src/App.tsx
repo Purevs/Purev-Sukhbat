@@ -24,7 +24,8 @@ import {
   BarChart2,
   PieChart,
   Download,
-  Printer
+  Printer,
+  Shield
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -54,8 +55,10 @@ const cn = (...classes: string[]) => classes.filter(Boolean).join(' ');
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [view, setView] = useState<'list' | 'add' | 'detail' | 'scan' | 'landing' | 'reports'>('landing');
+  const [view, setView] = useState<'list' | 'add' | 'detail' | 'scan' | 'landing' | 'reports' | 'admin'>('landing');
   const [landingTab, setLandingTab] = useState<'login' | 'register' | null>(null);
+  const [otpSent, setOtpSent] = useState(false);
+  const [pendingOtp, setPendingOtp] = useState<string | null>(null);
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [registrationType, setRegistrationType] = useState<'cow' | 'calf'>('cow');
@@ -236,9 +239,13 @@ export default function App() {
         if (!querySnapshot.empty) {
           const userDoc = querySnapshot.docs[0];
           const userData = { id: userDoc.id, ...userDoc.data() } as unknown as User;
-          setUser(userData);
-          localStorage.setItem('farm_user_id', userData.id.toString());
-          setView('list');
+          if (!userData.is_approved) {
+            setAuthError('Таны бүртгэл хараахан батлагдаагүй байна.');
+          } else {
+            setUser(userData);
+            localStorage.setItem('farm_user_id', userData.id.toString());
+            setView('list');
+          }
         } else {
           setAuthError('Фермийн нэр эсвэл ПИН код буруу байна.');
         }
@@ -247,29 +254,61 @@ export default function App() {
         const farm_name = formData.get('farm_name') as string;
         const email = formData.get('email') as string;
         const pin_code = formData.get('pin_code') as string;
+        const otp_code = formData.get('otp_code') as string;
         
-        const q = query(collection(db, 'users'), where('farm_name', '==', farm_name));
-        const querySnapshot = await getDocs(q);
-        
-        if (!querySnapshot.empty) {
-          setAuthError('Фермийн нэр аль хэдийн бүртгэгдсэн байна.');
-        } else {
-          const newUser = {
-            name,
-            farm_name,
+        if (!otpSent) {
+          // Generate OTP
+          const code = Math.floor(1000 + Math.random() * 9000).toString();
+          
+          // Save OTP
+          await addDoc(collection(db, 'otps'), {
             email,
-            pin_code,
-            created_at: serverTimestamp(),
-            is_approved: false
-          };
-          const docRef = await addDoc(collection(db, 'users'), newUser);
-          setUser({ id: docRef.id, ...newUser } as unknown as User);
-          localStorage.setItem('farm_user_id', docRef.id);
-          setView('list');
+            code,
+            expires_at: new Date(Date.now() + 10 * 60000).toISOString()
+          });
+          
+          // Trigger email
+          await addDoc(collection(db, 'mail'), {
+            to: email,
+            message: {
+              subject: 'Таны баталгаажуулах код',
+              text: `Таны баталгаажуулах код: ${code}`
+            }
+          });
+          
+          setOtpSent(true);
+          setPendingOtp(code);
+          setAuthError('Код таны имэйл рүү илгээгдлээ.');
+        } else {
+          // Verify OTP
+          if (otp_code === pendingOtp) {
+            const q = query(collection(db, 'users'), where('farm_name', '==', farm_name));
+            const querySnapshot = await getDocs(q);
+            
+            if (!querySnapshot.empty) {
+              setAuthError('Фермийн нэр аль хэдийн бүртгэгдсэн байна.');
+            } else {
+              const newUser = {
+                name,
+                farm_name,
+                email,
+                pin_code,
+                created_at: serverTimestamp(),
+                is_approved: false
+              };
+              const docRef = await addDoc(collection(db, 'users'), newUser);
+              setUser({ id: docRef.id, ...newUser } as unknown as User);
+              localStorage.setItem('farm_user_id', docRef.id);
+              setView('list');
+            }
+          } else {
+            setAuthError('Баталгаажуулах код буруу байна.');
+          }
         }
       }
-    } catch (err: any) {
-      setAuthError('An error occurred. Please try again.');
+    } catch (err) {
+      console.error('Authentication failed:', err);
+      setAuthError('Алдаа гарлаа. Дахин оролдоно уу.');
     } finally {
       setAuthLoading(false);
     }
@@ -453,6 +492,39 @@ export default function App() {
     });
   };
 
+  const AdminView = () => {
+    const [pendingUsers, setPendingUsers] = useState<User[]>([]);
+
+    useEffect(() => {
+      const fetchPendingUsers = async () => {
+        const q = query(collection(db, 'users'), where('is_approved', '==', false));
+        const querySnapshot = await getDocs(q);
+        setPendingUsers(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as User)));
+      };
+      fetchPendingUsers();
+    }, []);
+
+    const approveUser = async (userId: string) => {
+      await updateDoc(doc(db, 'users', userId), { is_approved: true });
+      setPendingUsers(pendingUsers.filter(u => u.id !== userId));
+    };
+
+    return (
+      <div className="p-4">
+        <h2 className="text-xl font-bold mb-4">Хэрэглэгч батлах</h2>
+        {pendingUsers.map(u => (
+          <div key={u.id} className="p-4 bg-white rounded-xl shadow-sm mb-2 flex justify-between items-center">
+            <div>
+              <p className="font-bold">{u.name}</p>
+              <p className="text-sm text-gray-500">{u.email}</p>
+            </div>
+            <button onClick={() => approveUser(u.id)} className="bg-[#5A5A40] text-white px-4 py-2 rounded-xl">Батлах</button>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const heatAlerts = getHeatAlerts();
   const birthAlerts = getBirthAlerts();
   const totalAlerts = heatAlerts.length + birthAlerts.length;
@@ -484,6 +556,15 @@ export default function App() {
           <div className="flex items-center gap-2">
             {view === 'list' && (
               <>
+                {user?.email === 'purevs@gmail.com' && (
+                  <button 
+                    onClick={() => setView('admin')}
+                    className="p-2 hover:bg-black/5 rounded-full transition-colors text-black/40"
+                    title="Админ"
+                  >
+                    <Shield size={20} />
+                  </button>
+                )}
                 <button 
                   onClick={handleLogout}
                   className="p-2 hover:bg-black/5 rounded-full transition-colors text-black/40"
@@ -533,6 +614,7 @@ export default function App() {
       </header>
 
       <main className="max-w-2xl mx-auto p-4 pb-24">
+        {view === 'admin' && <AdminView />}
         {view === 'landing' && (
           <h1 className="text-xl font-bold tracking-tight mb-4">Тавтай морилно уу</h1>
         )}

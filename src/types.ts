@@ -5,6 +5,7 @@ export interface User {
   phone: string;
   pin_code: string;
   created_at: string;
+  is_approved: boolean;
 }
 
 export interface Cow {
