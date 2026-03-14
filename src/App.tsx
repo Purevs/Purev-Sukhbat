@@ -472,7 +472,7 @@ export default function App() {
               </button>
             )}
             <h1 className="text-xl font-bold tracking-tight">
-              {view === 'landing' ? 'Тавтай морилно уу' :
+              {view === 'landing' ? '' :
                view === 'list' ? (user?.farm_name || 'Фермийн Бүртгэл') : 
                view === 'add' ? 'Шинэ бүртгэл' : 
                view === 'detail' ? 'Мэдээлэл' : 'QR Код'}
@@ -530,6 +530,9 @@ export default function App() {
       </header>
 
       <main className="max-w-2xl mx-auto p-4 pb-24">
+        {view === 'landing' && (
+          <h1 className="text-xl font-bold tracking-tight mb-4">Тавтай морилно уу</h1>
+        )}
         <AnimatePresence mode="wait">
           {view === 'landing' && (
             <motion.div
@@ -537,7 +540,7 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white p-8 rounded-[40px] shadow-xl border border-[#141414]/5 text-center space-y-8 mt-12"
+              className="bg-white p-8 rounded-[40px] shadow-xl border border-[#141414]/5 text-center space-y-8"
             >
               <div className="flex justify-center">
                 <div className="w-20 h-20 bg-[#F5F5F0] rounded-3xl flex items-center justify-center text-[#5A5A40]">
