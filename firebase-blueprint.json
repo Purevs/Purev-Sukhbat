@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User account and farm information",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "farm_name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "pin_code": { "type": "string" },
+        "is_approved": { "type": "boolean" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "pin_code"]
+    },
+    "Cow": {
+      "title": "Cow",
+      "description": "Cow information",
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string" },
+        "tag_code": { "type": "string" },
+        "type": { "type": "string" },
+        "breed": { "type": "string" },
+        "age": { "type": "number" },
+        "gender": { "type": "string" },
+        "mother_tag": { "type": "string" },
+        "birth_date": { "type": "string", "format": "date" },
+        "calvings": { "type": "number" },
+        "last_calving_date": { "type": "string", "format": "date" },
+        "insemination_date": { "type": "string", "format": "date" },
+        "image_data": { "type": "string" },
+        "notes": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["user_id", "tag_code"]
+    },
+    "MilkYield": {
+      "title": "MilkYield",
+      "description": "Daily milk yield record",
+      "type": "object",
+      "properties": {
+        "cow_id": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string", "format": "date" },
+        "session": { "type": "string" }
+      },
+      "required": ["cow_id", "amount", "date"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "User" },
+      "description": "User documents"
+    },
+    "users/{userId}/cows/{cowId}": {
+      "schema": { "$ref": "Cow" },
+      "description": "Cows belonging to a user"
+    },
+    "users/{userId}/cows/{cowId}/milkYields/{yieldId}": {
+      "schema": { "$ref": "MilkYield" },
+      "description": "Milk yields for a cow"
+    }
+  }
+}

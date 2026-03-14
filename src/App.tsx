@@ -42,6 +42,12 @@ import { format, differenceInDays, addDays, startOfWeek, endOfWeek, startOfMonth
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { motion, AnimatePresence } from 'motion/react';
 import { Cow, CowDetail, MilkYield, User } from './types';
+import { db, auth } from './firebase';
+import { 
+  collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, 
+  query, where, onSnapshot, orderBy, serverTimestamp 
+} from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 
 // Utility for tailwind classes
 const cn = (...classes: string[]) => classes.filter(Boolean).join(' ');
@@ -54,7 +60,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [registrationType, setRegistrationType] = useState<'cow' | 'calf'>('cow');
   const [cows, setCows] = useState<Cow[]>([]);
-  const [selectedCowId, setSelectedCowId] = useState<number | null>(null);
+  const [selectedCowId, setSelectedCowId] = useState<string | null>(null);
   const [cowDetail, setCowDetail] = useState<CowDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -133,9 +139,25 @@ export default function App() {
         startDate = format(subDays(new Date(), 30), 'yyyy-MM-dd');
       }
 
-      const res = await fetch(`/api/reports/milk?userId=${user.id}&startDate=${startDate}&endDate=${endDate}`);
-      const data = await res.json();
-      setReportData(data);
+      // 1. Fetch all cows
+      const cowsSnapshot = await getDocs(collection(db, 'users', user.id.toString(), 'cows'));
+      const cowIds = cowsSnapshot.docs.map(doc => doc.id);
+
+      // 2. Fetch milk yields for each cow
+      let allYields: MilkYield[] = [];
+      for (const cowId of cowIds) {
+        const yieldsSnapshot = await getDocs(
+          query(
+            collection(db, 'users', user.id.toString(), 'cows', cowId, 'milkYields'),
+            where('date', '>=', startDate),
+            where('date', '<=', endDate)
+          )
+        );
+        const yields = yieldsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as MilkYield));
+        allYields = [...allYields, ...yields];
+      }
+
+      setReportData(allYields);
     } catch (err) {
       console.error('Failed to fetch report data:', err);
     } finally {
@@ -177,12 +199,13 @@ export default function App() {
   const checkUser = async (userId?: string | null) => {
     setLoading(true);
     try {
-      const url = userId ? `/api/users/me?userId=${userId}` : '/api/users/me';
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data) {
-        setUser(data);
-        // Do not auto-redirect to 'list' view
+      if (userId) {
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        if (userDoc.exists()) {
+          setUser({ id: userDoc.id, ...userDoc.data() } as unknown as User);
+        } else {
+          setView('landing');
+        }
       } else {
         setView('landing');
       }
@@ -194,31 +217,7 @@ export default function App() {
     }
   };
 
-  const sendOtp = async () => {
-    const email = document.querySelector<HTMLInputElement>('input[name="email"]')?.value;
-    if (!email) {
-      setAuthError('Имэйл хаягаа оруулна уу.');
-      return;
-    }
-    setAuthLoading(true);
-    try {
-      const res = await fetch('/api/users/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setAuthError(data.message);
-      } else {
-        setAuthError(data.error);
-      }
-    } catch (err) {
-      setAuthError('Алдаа гарлаа. Дахин оролдоно уу.');
-    } finally {
-      setAuthLoading(false);
-    }
-  };
+  // sendOtp function removed as backend API is no longer available.
 
   const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -230,38 +229,43 @@ export default function App() {
       if (landingTab === 'login') {
         const farm_name = formData.get('farm_name') as string;
         const pin_code = formData.get('pin_code') as string;
-        const res = await fetch('/api/users/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ farm_name, pin_code }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          setUser(data);
-          localStorage.setItem('farm_user_id', data.id.toString());
+        
+        const q = query(collection(db, 'users'), where('farm_name', '==', farm_name), where('pin_code', '==', pin_code));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          const userDoc = querySnapshot.docs[0];
+          const userData = { id: userDoc.id, ...userDoc.data() } as unknown as User;
+          setUser(userData);
+          localStorage.setItem('farm_user_id', userData.id.toString());
           setView('list');
         } else {
-          setAuthError(data.error);
+          setAuthError('Фермийн нэр эсвэл ПИН код буруу байна.');
         }
       } else {
         const name = formData.get('name') as string;
         const farm_name = formData.get('farm_name') as string;
         const email = formData.get('email') as string;
         const pin_code = formData.get('pin_code') as string;
-        const otp_code = formData.get('otp_code') as string;
         
-        const res = await fetch('/api/users/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, farm_name, email, pin_code, otp_code }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          setUser(data);
-          localStorage.setItem('farm_user_id', data.id.toString());
-          setView('list');
+        const q = query(collection(db, 'users'), where('farm_name', '==', farm_name));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          setAuthError('Фермийн нэр аль хэдийн бүртгэгдсэн байна.');
         } else {
-          setAuthError(data.error);
+          const newUser = {
+            name,
+            farm_name,
+            email,
+            pin_code,
+            created_at: serverTimestamp(),
+            is_approved: false
+          };
+          const docRef = await addDoc(collection(db, 'users'), newUser);
+          setUser({ id: docRef.id, ...newUser } as unknown as User);
+          localStorage.setItem('farm_user_id', docRef.id);
+          setView('list');
         }
       }
     } catch (err: any) {
@@ -281,9 +285,10 @@ export default function App() {
     if (!user) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/cows?userId=${user.id}`);
-      const data = await res.json();
-      setCows(data);
+      const q = query(collection(db, 'users', user.id.toString(), 'cows'), orderBy('created_at', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const cows = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Cow));
+      setCows(cows);
     } catch (err) {
       console.error('Failed to fetch cows:', err);
     } finally {
@@ -291,11 +296,17 @@ export default function App() {
     }
   };
 
-  const fetchCowDetail = async (id: number) => {
+  const fetchCowDetail = async (id: string) => {
     try {
-      const res = await fetch(`/api/cows/${id}`);
-      const data = await res.json();
-      setCowDetail(data);
+      const cowDoc = await getDoc(doc(db, 'users', user!.id.toString(), 'cows', id));
+      if (cowDoc.exists()) {
+        const cowData = { id: cowDoc.id, ...cowDoc.data() } as unknown as CowDetail;
+        
+        const yieldsSnapshot = await getDocs(query(collection(db, 'users', user!.id.toString(), 'cows', id, 'milkYields'), orderBy('date', 'desc')));
+        const yields = yieldsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as MilkYield));
+        
+        setCowDetail({ ...cowData, yields });
+      }
     } catch (err) {
       console.error('Failed to fetch cow detail:', err);
     }
@@ -316,37 +327,30 @@ export default function App() {
     e.preventDefault();
     if (!user) return;
     const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData.entries());
+    const data: any = Object.fromEntries(formData.entries());
     
     data.type = registrationType;
     data.user_id = user.id.toString();
-
+    
     // Add image data if exists
     if (imagePreview) {
       data.image_data = imagePreview;
     }
     
     try {
-      const url = isEditing && cowDetail ? `/api/cows/${cowDetail.id}` : '/api/cows';
-      const method = isEditing ? 'PATCH' : 'POST';
-      
       const performSubmit = async () => {
-        const res = await fetch(url, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        });
-        if (res.ok) {
+        if (isEditing && cowDetail) {
+          await updateDoc(doc(db, 'users', user.id.toString(), 'cows', cowDetail.id), data);
+          fetchCowDetail(cowDetail.id);
+          setView('detail');
+        } else {
+          data.created_at = serverTimestamp();
+          await addDoc(collection(db, 'users', user.id.toString(), 'cows'), data);
           fetchCows();
-          if (isEditing && cowDetail) {
-            fetchCowDetail(cowDetail.id);
-            setView('detail');
-          } else {
-            setView('list');
-          }
-          setIsEditing(false);
-          setImagePreview(null);
+          setView('list');
         }
+        setIsEditing(false);
+        setImagePreview(null);
       };
 
       if (isEditing) {
@@ -370,15 +374,14 @@ export default function App() {
     const session = formData.get('session') as string;
 
     try {
-      const res = await fetch('/api/milk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cow_id: selectedCowId, amount, date, session }),
+      await addDoc(collection(db, 'users', user!.id.toString(), 'cows', selectedCowId!, 'milkYields'), {
+        amount,
+        date,
+        session,
+        created_at: serverTimestamp()
       });
-      if (res.ok) {
-        fetchCowDetail(selectedCowId);
-        (e.target as HTMLFormElement).reset();
-      }
+      fetchCowDetail(selectedCowId!);
+      (e.target as HTMLFormElement).reset();
     } catch (err) {
       console.error('Failed to add milk yield:', err);
     }
@@ -389,7 +392,7 @@ export default function App() {
     
     const performDelete = async () => {
       try {
-        await fetch(`/api/cows/${id}`, { method: 'DELETE' });
+        await deleteDoc(doc(db, 'users', user!.id.toString(), 'cows', id.toString()));
         fetchCows();
         setView('list');
       } catch (err) {
@@ -622,7 +625,7 @@ export default function App() {
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Баталгаажуулах код (OTP)</label>
                         <div className="flex gap-2">
                           <input name="otp_code" className="flex-1 p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="1234" />
-                          <button type="button" onClick={sendOtp} className="bg-[#5A5A40] text-white px-4 rounded-2xl text-xs font-bold">Код авах</button>
+                          {/* Код авах товчийг түр хассан */}
                         </div>
                       </div>
                       <button 
