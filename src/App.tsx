@@ -182,7 +182,7 @@ export default function App() {
       const data = await res.json();
       if (data) {
         setUser(data);
-        setView('list');
+        // Do not auto-redirect to 'list' view
       } else {
         setView('landing');
       }

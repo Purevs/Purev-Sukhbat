@@ -36,6 +36,12 @@ async function initDb() {
       )
     `);
 
+    try {
+      await connection.execute(`ALTER TABLE users ADD COLUMN is_approved BOOLEAN DEFAULT FALSE`);
+    } catch (err: any) {
+      // Column might already exist
+    }
+
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS otp_codes (
         email VARCHAR(255) PRIMARY KEY,
@@ -183,8 +189,8 @@ async function startServer() {
       }
 
       const [result] = await db.execute(`
-        INSERT INTO users (name, farm_name, email, pin_code)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO users (name, farm_name, email, pin_code, is_approved)
+        VALUES (?, ?, ?, ?, FALSE)
       `, [name, farm_name, email, pin_code || '0000']);
       
       // Clear OTP
@@ -202,15 +208,28 @@ async function startServer() {
   });
 
 
+  app.post("/api/admin/approve-user", async (req, res) => {
+    const { userId, adminEmail } = req.body;
+    if (adminEmail !== 'purevs@gmail.com') {
+      return res.status(403).json({ error: "Зөвхөн админ баталгаажуулах эрхтэй." });
+    }
+    try {
+      await db.execute("UPDATE users SET is_approved = TRUE WHERE id = ?", [userId]);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.post("/api/users/login", async (req, res) => {
     const { farm_name, pin_code } = req.body;
     try {
-      const [rows] = await db.execute("SELECT * FROM users WHERE farm_name = ? AND pin_code = ?", [farm_name, pin_code]);
+      const [rows] = await db.execute("SELECT * FROM users WHERE farm_name = ? AND pin_code = ? AND is_approved = TRUE", [farm_name, pin_code]);
       const user = (rows as any[])[0];
       if (user) {
         res.json(user);
       } else {
-        res.status(401).json({ error: "Фермийн нэр эсвэл PIN код буруу байна." });
+        res.status(401).json({ error: "Фермийн нэр эсвэл PIN код буруу байна, эсвэл админ баталгаажуулаагүй байна." });
       }
     } catch (err: any) {
       res.status(500).json({ error: err.message });
