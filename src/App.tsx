@@ -728,8 +728,11 @@ export default function App() {
                           ) : (
                             <>
                               <input name="otp_code" className="flex-1 p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="1234" />
-                              <button type="submit" className="bg-[#5A5A40] text-white px-6 py-4 rounded-2xl font-bold hover:bg-[#4A4A30] transition-all">
+                              <button type="submit" className="bg-[#5A5A40] text-white px-4 py-4 rounded-2xl font-bold hover:bg-[#4A4A30] transition-all">
                                 {authLoading ? 'Бүртгэж байна...' : 'Бүртгүүлэх'}
+                              </button>
+                              <button type="button" onClick={handleSendOtp} className="bg-gray-200 text-gray-700 px-4 py-4 rounded-2xl font-bold hover:bg-gray-300 transition-all">
+                                Дахин илгээх
                               </button>
                             </>
                           )}
