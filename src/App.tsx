@@ -68,12 +68,43 @@ export default function App() {
       console.log('onAuthStateChanged: firebaseUser=', firebaseUser);
       if (firebaseUser) {
         // Fetch user document from Firestore
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-        console.log('onAuthStateChanged: userDoc.exists()=', userDoc.exists());
-        if (userDoc.exists()) {
-          setUser({ id: firebaseUser.uid, ...userDoc.data() } as User);
-          setView('list');
-        } else {
+        try {
+          // 1. Try to fetch by UID
+          let userDocRef = doc(db, 'users', firebaseUser.uid);
+          let userDoc = await getDoc(userDocRef);
+
+          // 2. If not found, try to find by email
+          if (!userDoc.exists() && firebaseUser.email) {
+            const q = query(collection(db, 'users'), where('email', '==', firebaseUser.email));
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+              userDocRef = snapshot.docs[0].ref;
+              userDoc = await getDoc(userDocRef);
+            }
+          }
+
+          // 3. If still not found, create new document
+          if (!userDoc.exists()) {
+            await setDoc(userDocRef, {
+              email: firebaseUser.email,
+              name: firebaseUser.displayName || 'Шинэ хэрэглэгч',
+              created_at: serverTimestamp(),
+              is_approved: false,
+              role: 'user'
+            });
+            userDoc = await getDoc(userDocRef);
+          }
+
+          if (userDoc.exists()) {
+            setUser({ id: userDoc.id, ...userDoc.data() } as User);
+            setView('list');
+          } else {
+            console.log('onAuthStateChanged: Document does not exist for UID:', firebaseUser.uid);
+            setUser(null);
+            setView('landing');
+          }
+        } catch (error) {
+          console.error('onAuthStateChanged: Error fetching userDoc=', error);
           setUser(null);
           setView('landing');
         }
@@ -292,6 +323,7 @@ export default function App() {
   // sendOtp function removed as backend API is no longer available.
 
   const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
+    console.log('handleAuth called');
     e.preventDefault();
     setAuthError('');
     setAuthLoading(true);
@@ -834,7 +866,11 @@ export default function App() {
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Нууц үг</label>
                         <input name="password" type="password" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Нууц үг" />
                       </div>
-                      <button type="submit" className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98] mt-4">
+                      <button 
+                        type="submit" 
+                        onClick={() => console.log('Login button clicked')}
+                        className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98] mt-4"
+                      >
                         Нэвтрэх
                       </button>
                     </form>
