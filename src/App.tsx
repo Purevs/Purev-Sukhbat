@@ -65,9 +65,11 @@ export default function App() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log('onAuthStateChanged: firebaseUser=', firebaseUser);
       if (firebaseUser) {
         // Fetch user document from Firestore
         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        console.log('onAuthStateChanged: userDoc.exists()=', userDoc.exists());
         if (userDoc.exists()) {
           setUser({ id: firebaseUser.uid, ...userDoc.data() } as User);
           setView('list');
@@ -387,7 +389,10 @@ export default function App() {
 
   const handleSubmitCow = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {
+      console.log('User is null, cannot submit cow');
+      return;
+    }
     const formData = new FormData(e.currentTarget);
     const data: any = Object.fromEntries(formData.entries());
     
@@ -413,12 +418,15 @@ export default function App() {
     }
     
     try {
+      console.log('Submitting cow:', data, 'isEditing:', isEditing, 'user.id:', user.id, 'cowDetail:', cowDetail);
       const performSubmit = async () => {
         if (isEditing && cowDetail) {
+          console.log('Updating cow:', cowDetail.id);
           await updateDoc(doc(db, 'users', user.id.toString(), 'cows', cowDetail.id), data);
           fetchCowDetail(cowDetail.id);
           setView('detail');
         } else {
+          console.log('Adding new cow');
           data.created_at = serverTimestamp();
           await addDoc(collection(db, 'users', user.id.toString(), 'cows'), data);
           fetchCows();
