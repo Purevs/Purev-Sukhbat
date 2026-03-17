@@ -85,13 +85,19 @@ export default function App() {
 
           // 3. If still not found, create new document
           if (!userDoc.exists()) {
-            await setDoc(userDocRef, {
-              email: firebaseUser.email,
-              name: firebaseUser.displayName || 'Шинэ хэрэглэгч',
-              created_at: serverTimestamp(),
-              is_approved: false,
-              role: 'user'
-            });
+            console.log('onAuthStateChanged: Creating new user document for UID:', firebaseUser.uid);
+            try {
+              await setDoc(userDocRef, {
+                email: firebaseUser.email,
+                name: firebaseUser.displayName || 'Шинэ хэрэглэгч',
+                created_at: serverTimestamp(),
+                is_approved: false,
+                role: 'user'
+              });
+              console.log('onAuthStateChanged: Successfully created user document');
+            } catch (e) {
+              console.error('onAuthStateChanged: Error creating user document:', e);
+            }
             userDoc = await getDoc(userDocRef);
           }
 
