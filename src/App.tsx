@@ -211,8 +211,7 @@ export default function App() {
       if (userId) {
         const userDoc = await getDoc(doc(db, 'users', userId));
         if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setUser({ id: userDoc.id, ...userData } as unknown as User);
+          setUser({ id: userDoc.id, ...userDoc.data() } as unknown as User);
         } else {
           setView('landing');
         }
@@ -317,11 +316,10 @@ export default function App() {
               email,
               pin_code,
               created_at: serverTimestamp(),
-              is_approved: false,
-              role: 'user'
+              is_approved: false
             };
             const docRef = await addDoc(collection(db, 'users'), newUser);
-            setUser({ id: docRef.id, ...newUser, role: 'user' } as unknown as User);
+            setUser({ id: docRef.id, ...newUser } as unknown as User);
             localStorage.setItem('farm_user_id', docRef.id);
             setView('list');
           }
@@ -561,12 +559,6 @@ export default function App() {
       setAllUsers(allUsers.map(u => u.id === userId ? { ...u, is_approved: true } : u));
     };
 
-    const toggleRole = async (userId: string, currentRole: 'admin' | 'user' | undefined) => {
-      const newRole = currentRole === 'admin' ? 'user' : 'admin';
-      await updateDoc(doc(db, 'users', userId), { role: newRole });
-      setAllUsers(allUsers.map(u => u.id === userId ? { ...u, role: newRole } : u));
-    };
-
     if (loading) return <div className="p-4">Уншиж байна...</div>;
 
     return (
@@ -594,15 +586,9 @@ export default function App() {
                 <p className="font-bold">{u.name}</p>
                 <p className="text-sm text-gray-500">Ферм: {u.farm_name}</p>
                 <p className="text-sm text-gray-500">Үхрийн тоо: {u.cowCount}</p>
-                <p className="text-sm font-semibold">Эрх: {u.role === 'admin' ? 'Админ' : 'Хэрэглэгч'}</p>
               </div>
-              <div className="flex flex-col gap-2 items-end">
-                <div className={`px-2 py-1 rounded-full text-xs ${u.is_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                  {u.is_approved ? 'Батлагдсан' : 'Хүлээгдэж буй'}
-                </div>
-                <button onClick={() => toggleRole(u.id, u.role)} className="text-xs bg-gray-200 px-2 py-1 rounded">
-                  {u.role === 'admin' ? 'Админ эрх хасах' : 'Админ болгох'}
-                </button>
+              <div className={`px-2 py-1 rounded-full text-xs ${u.is_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                {u.is_approved ? 'Батлагдсан' : 'Хүлээгдэж буй'}
               </div>
             </div>
           ))}
@@ -636,8 +622,7 @@ export default function App() {
               {view === 'landing' ? '' :
                view === 'list' ? (user?.farm_name || 'Фермийн Бүртгэл') : 
                view === 'add' ? 'Шинэ бүртгэл' : 
-               view === 'detail' ? 'Мэдээлэл' : 
-               view === 'admin' ? 'Админ самбар' : 'QR Код'}
+               view === 'detail' ? 'Мэдээлэл' : 'QR Код'}
             </h1>
           </div>
           <div className="flex items-center gap-2">

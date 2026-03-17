@@ -1,5 +1,5 @@
 export interface User {
-  id: string;
+  id: number;
   name: string;
   farm_name: string;
   phone: string;
@@ -10,7 +10,7 @@ export interface User {
 }
 
 export interface Cow {
-  id: string;
+  id: number;
   tag_code: string;
   type: 'cow' | 'calf';
   breed: string | null;
@@ -27,8 +27,8 @@ export interface Cow {
 }
 
 export interface MilkYield {
-  id: string;
-  cow_id: string;
+  id: number;
+  cow_id: number;
   amount: number;
   date: string;
   session: 'morning' | 'evening';
