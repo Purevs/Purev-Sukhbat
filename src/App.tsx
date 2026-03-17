@@ -144,6 +144,7 @@ export default function App() {
   const [forgotPinError, setForgotPinError] = useState('');
 
   const verifyPin = () => {
+    console.log('verifyPin: pinInput=', pinInput, 'user?.pin_code=', user?.pin_code);
     if (pinInput === user?.pin_code) {
       setShowPinModal(false);
       setPinInput('');
