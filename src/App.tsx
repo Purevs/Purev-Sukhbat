@@ -561,6 +561,12 @@ export default function App() {
       setAllUsers(allUsers.map(u => u.id === userId ? { ...u, is_approved: true } : u));
     };
 
+    const toggleRole = async (userId: string, currentRole: 'admin' | 'user' | undefined) => {
+      const newRole = currentRole === 'admin' ? 'user' : 'admin';
+      await updateDoc(doc(db, 'users', userId), { role: newRole });
+      setAllUsers(allUsers.map(u => u.id === userId ? { ...u, role: newRole } : u));
+    };
+
     if (loading) return <div className="p-4">Уншиж байна...</div>;
 
     return (
@@ -588,9 +594,15 @@ export default function App() {
                 <p className="font-bold">{u.name}</p>
                 <p className="text-sm text-gray-500">Ферм: {u.farm_name}</p>
                 <p className="text-sm text-gray-500">Үхрийн тоо: {u.cowCount}</p>
+                <p className="text-sm font-semibold">Эрх: {u.role === 'admin' ? 'Админ' : 'Хэрэглэгч'}</p>
               </div>
-              <div className={`px-2 py-1 rounded-full text-xs ${u.is_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                {u.is_approved ? 'Батлагдсан' : 'Хүлээгдэж буй'}
+              <div className="flex flex-col gap-2 items-end">
+                <div className={`px-2 py-1 rounded-full text-xs ${u.is_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                  {u.is_approved ? 'Батлагдсан' : 'Хүлээгдэж буй'}
+                </div>
+                <button onClick={() => toggleRole(u.id, u.role)} className="text-xs bg-gray-200 px-2 py-1 rounded">
+                  {u.role === 'admin' ? 'Админ эрх хасах' : 'Админ болгох'}
+                </button>
               </div>
             </div>
           ))}
