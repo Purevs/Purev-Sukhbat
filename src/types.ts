@@ -20,7 +20,7 @@ export interface Cow {
   calvings: number;
   last_calving_date: string | null;
   insemination_date: string | null;
-  image_data: string | null;
+  image_url: string | null;
   notes: string | null;
   created_at: string;
 }

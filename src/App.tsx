@@ -43,11 +43,12 @@ import { format, differenceInDays, addDays, startOfWeek, endOfWeek, startOfMonth
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { motion, AnimatePresence } from 'motion/react';
 import { Cow, CowDetail, MilkYield, User } from './types';
-import { db, auth } from './firebase';
+import { db, auth, storage } from './firebase';
 import { 
   collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, 
   query, where, onSnapshot, orderBy, serverTimestamp 
 } from 'firebase/firestore';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
 
 // Utility for tailwind classes
@@ -55,7 +56,7 @@ const cn = (...classes: string[]) => classes.filter(Boolean).join(' ');
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [view, setView] = useState<'list' | 'add' | 'detail' | 'scan' | 'landing' | 'reports' | 'admin'>('landing');
+  const [view, setView] = useState<'list' | 'add' | 'detail' | 'scan' | 'landing' | 'reports' | 'admin' | 'forgotPin'>('landing');
   const [landingTab, setLandingTab] = useState<'login' | 'register' | null>(null);
   const [otpSent, setOtpSent] = useState(false);
   const [pendingOtp, setPendingOtp] = useState<string | null>(null);
@@ -82,6 +83,11 @@ export default function App() {
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
   const [onPinSuccess, setOnPinSuccess] = useState<{ action: () => void } | null>(null);
+  const [forgotPinStep, setForgotPinStep] = useState<'email' | 'otp' | 'newPin'>('email');
+  const [forgotPinEmail, setForgotPinEmail] = useState('');
+  const [forgotPinOtp, setForgotPinOtp] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [forgotPinError, setForgotPinError] = useState('');
 
   const verifyPin = () => {
     if (pinInput === user?.pin_code) {
@@ -387,8 +393,13 @@ export default function App() {
     data.user_id = user.id.toString();
     
     // Add image data if exists
+    let imageUrl = null;
     if (imagePreview) {
-      data.image_data = imagePreview;
+      const imageRef = ref(storage, `cows/${user.id}/${Date.now()}.jpg`);
+      await uploadString(imageRef, imagePreview, 'data_url');
+      imageUrl = await getDownloadURL(imageRef);
+      data.image_url = imageUrl;
+      delete data.image_data;
     }
     
     try {
@@ -630,6 +641,84 @@ export default function App() {
 
       <main className="max-w-2xl mx-auto p-4 pb-24">
         {view === 'admin' && <AdminView />}
+        {view === 'forgotPin' && (
+          <motion.div
+            key="forgotPin"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white p-8 rounded-[40px] shadow-xl border border-[#141414]/5 space-y-4"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">PIN код сэргээх</h2>
+              <button onClick={() => setView('landing')} className="text-sm text-black/40 hover:text-black">Буцах</button>
+            </div>
+            
+            {forgotPinError && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
+                <AlertCircle size={16} />
+                {forgotPinError}
+              </div>
+            )}
+
+            {forgotPinStep === 'email' && (
+              <div className="space-y-4">
+                <input type="email" value={forgotPinEmail} onChange={(e) => setForgotPinEmail(e.target.value)} className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none" placeholder="Имэйл хаяг" />
+                <button onClick={async () => {
+                  // Verify email exists
+                  const q = query(collection(db, 'users'), where('email', '==', forgotPinEmail));
+                  const snapshot = await getDocs(q);
+                  if (snapshot.empty) {
+                    setForgotPinError('Энэ имэйлээр бүртгэлтэй хэрэглэгч олдсонгүй.');
+                    return;
+                  }
+                  // Send OTP
+                  const code = Math.floor(1000 + Math.random() * 9000).toString();
+                  await addDoc(collection(db, 'otps'), { email: forgotPinEmail, code, expires_at: new Date(Date.now() + 10 * 60000).toISOString() });
+                  await addDoc(collection(db, 'mail'), { to: forgotPinEmail, message: { subject: 'PIN код сэргээх', text: `Таны код: ${code}` } });
+                  setPendingOtp(code);
+                  setForgotPinStep('otp');
+                  setForgotPinError('Код илгээгдлээ.');
+                }} className="w-full bg-[#5A5A40] text-white py-4 rounded-2xl font-bold">Код авах</button>
+              </div>
+            )}
+            
+            {forgotPinStep === 'otp' && (
+              <div className="space-y-4">
+                <input value={forgotPinOtp} onChange={(e) => setForgotPinOtp(e.target.value)} className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none" placeholder="Баталгаажуулах код" />
+                <button onClick={() => {
+                  if (forgotPinOtp === pendingOtp) {
+                    setForgotPinStep('newPin');
+                    setForgotPinError('');
+                  } else {
+                    setForgotPinError('Код буруу байна.');
+                  }
+                }} className="w-full bg-[#5A5A40] text-white py-4 rounded-2xl font-bold">Баталгаажуулах</button>
+              </div>
+            )}
+            
+            {forgotPinStep === 'newPin' && (
+              <div className="space-y-4">
+                <input type="password" maxLength={4} value={newPin} onChange={(e) => setNewPin(e.target.value)} className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none" placeholder="Шинэ PIN код" />
+                <button onClick={async () => {
+                  if (newPin.length !== 4) {
+                    setForgotPinError('PIN код 4 оронтой байх ёстой.');
+                    return;
+                  }
+                  const q = query(collection(db, 'users'), where('email', '==', forgotPinEmail));
+                  const snapshot = await getDocs(q);
+                  await updateDoc(snapshot.docs[0].ref, { pin_code: newPin });
+                  setForgotPinStep('email');
+                  setForgotPinEmail('');
+                  setForgotPinOtp('');
+                  setNewPin('');
+                  setForgotPinError('PIN код амжилттай солигдлоо.');
+                  setView('landing');
+                }} className="w-full bg-[#5A5A40] text-white py-4 rounded-2xl font-bold">Хадгалах</button>
+              </div>
+            )}
+          </motion.div>
+        )}
         {view === 'landing' && (
           <h1 className="text-xl font-bold tracking-tight mb-4">Тавтай морилно уу</h1>
         )}
@@ -689,6 +778,7 @@ export default function App() {
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">PIN код</label>
                         <input name="pin_code" type="password" maxLength={4} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="****" />
+                        <button type="button" onClick={() => setView('forgotPin')} className="text-sm text-black/50 hover:text-black mt-2">PIN код мартсан?</button>
                       </div>
                       <button type="submit" className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98] mt-4">
                         Нэвтрэх
@@ -985,8 +1075,8 @@ export default function App() {
                     >
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-[#F5F5F0] rounded-2xl flex items-center justify-center text-[#5A5A40] overflow-hidden">
-                          {cow.image_data ? (
-                            <img src={cow.image_data} alt={cow.tag_code} className="w-full h-full object-cover" />
+                          {cow.image_url ? (
+                            <img src={cow.image_url} alt={cow.tag_code} className="w-full h-full object-cover" />
                           ) : (
                             <Milk size={24} />
                           )}
@@ -1219,8 +1309,8 @@ export default function App() {
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex gap-4">
                     <div className="w-20 h-20 bg-[#F5F5F0] rounded-2xl flex items-center justify-center text-[#5A5A40] overflow-hidden">
-                      {cowDetail.image_data ? (
-                        <img src={cowDetail.image_data} alt={cowDetail.tag_code} className="w-full h-full object-cover" />
+                      {cowDetail.image_url ? (
+                        <img src={cowDetail.image_url} alt={cowDetail.tag_code} className="w-full h-full object-cover" />
                       ) : (
                         <Milk size={32} />
                       )}
@@ -1235,7 +1325,7 @@ export default function App() {
                       onClick={() => {
                         setIsEditing(true);
                         setRegistrationType(cowDetail.type as 'cow' | 'calf');
-                        setImagePreview(cowDetail.image_data);
+                        setImagePreview(cowDetail.image_url);
                         setView('add');
                       }}
                       className="p-2 text-[#5A5A40] hover:bg-[#F5F5F0] rounded-full transition-colors"
