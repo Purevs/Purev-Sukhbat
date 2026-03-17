@@ -211,7 +211,8 @@ export default function App() {
       if (userId) {
         const userDoc = await getDoc(doc(db, 'users', userId));
         if (userDoc.exists()) {
-          setUser({ id: userDoc.id, ...userDoc.data() } as unknown as User);
+          const userData = userDoc.data();
+          setUser({ id: userDoc.id, ...userData } as unknown as User);
         } else {
           setView('landing');
         }
@@ -316,10 +317,11 @@ export default function App() {
               email,
               pin_code,
               created_at: serverTimestamp(),
-              is_approved: false
+              is_approved: false,
+              role: 'user'
             };
             const docRef = await addDoc(collection(db, 'users'), newUser);
-            setUser({ id: docRef.id, ...newUser } as unknown as User);
+            setUser({ id: docRef.id, ...newUser, role: 'user' } as unknown as User);
             localStorage.setItem('farm_user_id', docRef.id);
             setView('list');
           }
