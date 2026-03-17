@@ -611,7 +611,7 @@ export default function App() {
               <button 
                 onClick={() => {
                   setView('list');
-                  setImagePreview(null);
+                  setImagePreview([]);
                 }}
                 className="p-2 hover:bg-black/5 rounded-full transition-colors"
               >
@@ -652,7 +652,7 @@ export default function App() {
                 <button 
                   onClick={() => {
                     setIsEditing(false);
-                    setImagePreview(null);
+                    setImagePreview([]);
                     setView('add');
                   }}
                   className="bg-[#5A5A40] text-white p-2 rounded-full shadow-lg hover:bg-[#4A4A30] transition-colors"
@@ -1193,7 +1193,16 @@ export default function App() {
                 <div className="flex flex-col items-center gap-4">
                   <div className="relative w-32 h-32 bg-[#F5F5F0] rounded-3xl flex items-center justify-center text-[#5A5A40] overflow-hidden border-2 border-dashed border-[#5A5A40]/20">
                     {imagePreview.length > 0 ? (
-                      <img src={imagePreview[0]} alt="Preview" className="w-full h-full object-cover" />
+                      <>
+                        <img src={imagePreview[0]} alt="Preview" className="w-full h-full object-cover" />
+                        <button 
+                          type="button"
+                          onClick={() => setImagePreview(prev => prev.filter((_, i) => i !== 0))}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
+                        >
+                          <X size={12} />
+                        </button>
+                      </>
                     ) : (
                       <Camera size={32} className="opacity-40" />
                     )}
@@ -1208,7 +1217,16 @@ export default function App() {
                   {imagePreview.length > 1 && (
                     <div className="grid grid-cols-4 gap-2 w-full">
                       {imagePreview.slice(1).map((preview, index) => (
-                        <img key={index} src={preview} alt="Preview" className="w-full h-16 object-cover rounded-xl" />
+                        <div key={index + 1} className="relative">
+                          <img src={preview} alt="Preview" className="w-full h-16 object-cover rounded-xl" />
+                          <button 
+                            type="button"
+                            onClick={() => setImagePreview(prev => prev.filter((_, i) => i !== index + 1))}
+                            className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -1339,7 +1357,7 @@ export default function App() {
                       onClick={() => {
                         setIsEditing(false);
                         setView('detail');
-                        setImagePreview(null);
+                        setImagePreview([]);
                       }}
                       className="flex-1 bg-[#F5F5F0] text-black/60 py-4 rounded-2xl font-bold hover:bg-black/5 transition-colors"
                     >
