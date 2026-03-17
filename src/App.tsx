@@ -1150,7 +1150,7 @@ export default function App() {
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-[#F5F5F0] rounded-2xl flex items-center justify-center text-[#5A5A40] overflow-hidden">
                           {cow.image_urls && cow.image_urls.length > 0 ? (
-                            <img src={cow.image_urls[0]} alt={cow.tag_code} className="w-full h-full object-cover" />
+                            <img src={`/api/image?url=${encodeURIComponent(cow.image_urls[0])}`} alt={cow.tag_code} className="w-full h-full object-cover" />
                           ) : (
                             <Milk size={24} />
                           )}
@@ -1412,7 +1412,7 @@ export default function App() {
                       {cowDetail.image_urls && cowDetail.image_urls.length > 0 ? (
                         <div className="grid grid-cols-2 gap-2">
                           {cowDetail.image_urls.map((url, index) => (
-                            <img key={index} src={url} alt={`${cowDetail.tag_code} ${index}`} className="w-full h-20 object-cover rounded-xl" />
+                            <img key={index} src={`/api/image?url=${encodeURIComponent(url)}`} alt={`${cowDetail.tag_code} ${index}`} className="w-full h-20 object-cover rounded-xl" />
                           ))}
                         </div>
                       ) : (

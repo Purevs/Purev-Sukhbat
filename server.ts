@@ -330,6 +330,26 @@ async function startServer() {
     }
   });
 
+  // Image Proxy Route
+  app.get('/api/image', async (req, res) => {
+    const imageUrl = req.query.url as string;
+    if (!imageUrl) {
+      return res.status(400).send('URL is required');
+    }
+
+    try {
+      const response = await fetch(imageUrl);
+      if (!response.ok) throw new Error('Failed to fetch image');
+      
+      const buffer = await response.arrayBuffer();
+      res.set('Content-Type', response.headers.get('content-type') || 'image/jpeg');
+      res.send(Buffer.from(buffer));
+    } catch (error) {
+      console.error('Proxy error:', error);
+      res.status(500).send('Failed to fetch image');
+    }
+  });
+
   app.patch("/api/cows/:id", async (req, res) => {
     const { id } = req.params;
     const { 
