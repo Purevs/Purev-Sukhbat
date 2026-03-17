@@ -636,7 +636,8 @@ export default function App() {
               {view === 'landing' ? '' :
                view === 'list' ? (user?.farm_name || 'Фермийн Бүртгэл') : 
                view === 'add' ? 'Шинэ бүртгэл' : 
-               view === 'detail' ? 'Мэдээлэл' : 'QR Код'}
+               view === 'detail' ? 'Мэдээлэл' : 
+               view === 'admin' ? 'Админ самбар' : 'QR Код'}
             </h1>
           </div>
           <div className="flex items-center gap-2">
