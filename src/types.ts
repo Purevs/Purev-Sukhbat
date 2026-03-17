@@ -6,6 +6,7 @@ export interface User {
   pin_code: string;
   created_at: string;
   is_approved: boolean;
+  role?: 'admin' | 'user';
 }
 
 export interface Cow {
@@ -20,7 +21,7 @@ export interface Cow {
   calvings: number;
   last_calving_date: string | null;
   insemination_date: string | null;
-  image_url: string | null;
+  image_urls: string[];
   notes: string | null;
   created_at: string;
 }

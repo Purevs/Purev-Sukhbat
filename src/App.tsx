@@ -68,7 +68,7 @@ export default function App() {
   const [cowDetail, setCowDetail] = useState<CowDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [reportRange, setReportRange] = useState<'daily' | 'weekly' | 'monthly'>('daily');
@@ -373,13 +373,19 @@ export default function App() {
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    const files = e.target.files;
+    if (files) {
+      const newPreviews: string[] = [];
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newPreviews.push(reader.result as string);
+          if (newPreviews.length === files.length) {
+            setImagePreview(prev => [...prev, ...newPreviews]);
+          }
+        };
+        reader.readAsDataURL(file as Blob);
+      });
     }
   };
 
@@ -393,13 +399,21 @@ export default function App() {
     data.user_id = user.id.toString();
     
     // Add image data if exists
-    let imageUrl = null;
-    if (imagePreview) {
-      const imageRef = ref(storage, `cows/${user.id}/${Date.now()}.jpg`);
-      await uploadString(imageRef, imagePreview, 'data_url');
-      imageUrl = await getDownloadURL(imageRef);
-      data.image_url = imageUrl;
-      delete data.image_data;
+    const imageUrls: string[] = [];
+    if (imagePreview.length > 0) {
+      for (const preview of imagePreview) {
+        if (preview.startsWith('http')) {
+          imageUrls.push(preview);
+        } else {
+          const imageRef = ref(storage, `cows/${user.id}/${Date.now()}_${Math.random()}.jpg`);
+          await uploadString(imageRef, preview as any, 'data_url');
+          const url = await getDownloadURL(imageRef);
+          imageUrls.push(url);
+        }
+      }
+      data.image_urls = imageUrls;
+    } else {
+      data.image_urls = [];
     }
     
     try {
@@ -415,7 +429,7 @@ export default function App() {
           setView('list');
         }
         setIsEditing(false);
-        setImagePreview(null);
+        setImagePreview([]);
       };
 
       if (isEditing) {
@@ -520,33 +534,65 @@ export default function App() {
 
   const AdminView = () => {
     const [pendingUsers, setPendingUsers] = useState<User[]>([]);
+    const [allUsers, setAllUsers] = useState<(User & { cowCount: number })[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-      const fetchPendingUsers = async () => {
-        const q = query(collection(db, 'users'), where('is_approved', '==', false));
-        const querySnapshot = await getDocs(q);
-        setPendingUsers(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as User)));
+      const fetchData = async () => {
+        setLoading(true);
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        const usersData = await Promise.all(usersSnapshot.docs.map(async (userDoc) => {
+          const userData = { id: userDoc.id, ...userDoc.data() } as unknown as User;
+          const cowsSnapshot = await getDocs(collection(db, 'users', userDoc.id, 'cows'));
+          return { ...userData, cowCount: cowsSnapshot.size };
+        }));
+        setAllUsers(usersData);
+        setPendingUsers(usersData.filter(u => !u.is_approved));
+        setLoading(false);
       };
-      fetchPendingUsers();
+      fetchData();
     }, []);
 
     const approveUser = async (userId: string) => {
       await updateDoc(doc(db, 'users', userId), { is_approved: true });
       setPendingUsers(pendingUsers.filter(u => u.id !== userId));
+      setAllUsers(allUsers.map(u => u.id === userId ? { ...u, is_approved: true } : u));
     };
 
+    if (loading) return <div className="p-4">Уншиж байна...</div>;
+
     return (
-      <div className="p-4">
-        <h2 className="text-xl font-bold mb-4">Хэрэглэгч батлах</h2>
-        {pendingUsers.map(u => (
-          <div key={u.id} className="p-4 bg-white rounded-xl shadow-sm mb-2 flex justify-between items-center">
-            <div>
-              <p className="font-bold">{u.name}</p>
-              <p className="text-sm text-gray-500">{u.email}</p>
+      <div className="p-4 space-y-6">
+        <h2 className="text-xl font-bold">Админ самбар</h2>
+        
+        <section>
+          <h3 className="text-lg font-bold mb-2">Хэрэглэгч батлах</h3>
+          {pendingUsers.map(u => (
+            <div key={u.id} className="p-4 bg-white rounded-xl shadow-sm mb-2 flex justify-between items-center">
+              <div>
+                <p className="font-bold">{u.name}</p>
+                <p className="text-sm text-gray-500">{u.email}</p>
+              </div>
+              <button onClick={() => approveUser(u.id)} className="bg-[#5A5A40] text-white px-4 py-2 rounded-xl">Батлах</button>
             </div>
-            <button onClick={() => approveUser(u.id)} className="bg-[#5A5A40] text-white px-4 py-2 rounded-xl">Батлах</button>
-          </div>
-        ))}
+          ))}
+        </section>
+
+        <section>
+          <h3 className="text-lg font-bold mb-2">Бүх хэрэглэгчид</h3>
+          {allUsers.map(u => (
+            <div key={u.id} className="p-4 bg-white rounded-xl shadow-sm mb-2 flex justify-between items-center">
+              <div>
+                <p className="font-bold">{u.name}</p>
+                <p className="text-sm text-gray-500">Ферм: {u.farm_name}</p>
+                <p className="text-sm text-gray-500">Үхрийн тоо: {u.cowCount}</p>
+              </div>
+              <div className={`px-2 py-1 rounded-full text-xs ${u.is_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                {u.is_approved ? 'Батлагдсан' : 'Хүлээгдэж буй'}
+              </div>
+            </div>
+          ))}
+        </section>
       </div>
     );
   };
@@ -580,6 +626,11 @@ export default function App() {
             </h1>
           </div>
           <div className="flex items-center gap-2">
+            {user?.role === 'admin' && view !== 'admin' && (
+              <button onClick={() => setView('admin')} className="p-2 bg-[#5A5A40] text-white rounded-full">
+                Админ
+              </button>
+            )}
             {view === 'list' && (
               <>
                 {user?.email === 'purevs@gmail.com' && (
@@ -1075,8 +1126,8 @@ export default function App() {
                     >
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-[#F5F5F0] rounded-2xl flex items-center justify-center text-[#5A5A40] overflow-hidden">
-                          {cow.image_url ? (
-                            <img src={cow.image_url} alt={cow.tag_code} className="w-full h-full object-cover" />
+                          {cow.image_urls && cow.image_urls.length > 0 ? (
+                            <img src={cow.image_urls[0]} alt={cow.tag_code} className="w-full h-full object-cover" />
                           ) : (
                             <Milk size={24} />
                           )}
@@ -1141,18 +1192,26 @@ export default function App() {
                 {/* Image Upload */}
                 <div className="flex flex-col items-center gap-4">
                   <div className="relative w-32 h-32 bg-[#F5F5F0] rounded-3xl flex items-center justify-center text-[#5A5A40] overflow-hidden border-2 border-dashed border-[#5A5A40]/20">
-                    {imagePreview ? (
-                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    {imagePreview.length > 0 ? (
+                      <img src={imagePreview[0]} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
                       <Camera size={32} className="opacity-40" />
                     )}
                     <input 
                       type="file" 
                       accept="image/*" 
+                      multiple
                       onChange={handleImageChange}
                       className="absolute inset-0 opacity-0 cursor-pointer"
                     />
                   </div>
+                  {imagePreview.length > 1 && (
+                    <div className="grid grid-cols-4 gap-2 w-full">
+                      {imagePreview.slice(1).map((preview, index) => (
+                        <img key={index} src={preview} alt="Preview" className="w-full h-16 object-cover rounded-xl" />
+                      ))}
+                    </div>
+                  )}
                   <p className="text-xs font-bold text-black/40 uppercase tracking-widest">
                     {registrationType === 'cow' ? 'Үхрийн зураг' : 'Тугалын зураг'}
                   </p>
@@ -1309,8 +1368,12 @@ export default function App() {
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex gap-4">
                     <div className="w-20 h-20 bg-[#F5F5F0] rounded-2xl flex items-center justify-center text-[#5A5A40] overflow-hidden">
-                      {cowDetail.image_url ? (
-                        <img src={cowDetail.image_url} alt={cowDetail.tag_code} className="w-full h-full object-cover" />
+                      {cowDetail.image_urls && cowDetail.image_urls.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          {cowDetail.image_urls.map((url, index) => (
+                            <img key={index} src={url} alt={`${cowDetail.tag_code} ${index}`} className="w-full h-20 object-cover rounded-xl" />
+                          ))}
+                        </div>
                       ) : (
                         <Milk size={32} />
                       )}
@@ -1325,7 +1388,7 @@ export default function App() {
                       onClick={() => {
                         setIsEditing(true);
                         setRegistrationType(cowDetail.type as 'cow' | 'calf');
-                        setImagePreview(cowDetail.image_url);
+                        setImagePreview(cowDetail.image_urls || []);
                         setView('add');
                       }}
                       className="p-2 text-[#5A5A40] hover:bg-[#F5F5F0] rounded-full transition-colors"
