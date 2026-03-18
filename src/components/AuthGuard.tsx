@@ -17,10 +17,10 @@ export const AuthGuard = ({ children }: { children: React.ReactNode }) => {
           console.log("Fetching user doc for:", currentUser.uid);
           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
           console.log("User doc exists:", userDoc.exists());
-          if (userDoc.exists()) {
-            console.log("User doc data:", userDoc.data());
-          }
-          setStatus(userDoc.data()?.is_approved ? 'approved' : 'pending');
+          console.log("User doc data:", userDoc.data());
+          const isApproved = userDoc.data()?.is_approved;
+          console.log("Is approved:", isApproved);
+          setStatus(isApproved ? 'approved' : 'pending');
         } catch (error) {
           console.error("Error fetching user status:", error);
           setStatus('pending');

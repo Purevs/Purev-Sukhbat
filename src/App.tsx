@@ -104,8 +104,13 @@ export default function App() {
 
           if (userDoc.exists()) {
             const userData = userDoc.data();
+            console.log('userData:', userData);
             setUser({ id: userDoc.id, ...userData } as User);
-            setView('landing');
+            if (userData.is_approved) {
+              setView('list');
+            } else {
+              setView('pending');
+            }
           } else {
             console.log('onAuthStateChanged: Document does not exist for UID:', firebaseUser.uid);
             setUser(null);
@@ -144,12 +149,20 @@ export default function App() {
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
+
+  useEffect(() => {
+    if (user && !user.is_approved) {
+      setView('pending');
+    }
+  }, [user]);
+
   const [onPinSuccess, setOnPinSuccess] = useState<{ action: () => void } | null>(null);
   const [forgotPinStep, setForgotPinStep] = useState<'email' | 'otp' | 'newPin'>('email');
   const [forgotPinEmail, setForgotPinEmail] = useState('');
   const [forgotPinOtp, setForgotPinOtp] = useState('');
   const [newPin, setNewPin] = useState('');
   const [forgotPinError, setForgotPinError] = useState('');
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   const verifyPin = () => {
     console.log('verifyPin: pinInput=', pinInput, 'user?.pin_code=', user?.pin_code);
@@ -1428,7 +1441,7 @@ export default function App() {
                       {cowDetail.image_urls && cowDetail.image_urls.length > 0 ? (
                         <div className="grid grid-cols-2 gap-2">
                           {cowDetail.image_urls.map((url, index) => (
-                            <img key={index} src={`/api/image?url=${encodeURIComponent(url)}`} alt={`${cowDetail.tag_code} ${index}`} className="w-full h-20 object-cover rounded-xl" />
+                            <img key={index} src={`/api/image?url=${encodeURIComponent(url)}`} alt={`${cowDetail.tag_code} ${index}`} className="w-full h-20 object-cover rounded-xl cursor-pointer" onClick={() => setLightboxImage(url)} />
                           ))}
                         </div>
                       ) : (
@@ -1873,10 +1886,15 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
+        {lightboxImage && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setLightboxImage(null)}>
+            <img src={`/api/image?url=${encodeURIComponent(lightboxImage)}`} alt="Lightbox" className="max-w-full max-h-full object-contain rounded-2xl" />
+          </div>
+        )}
       </main>
 
       {/* Bottom Navigation */}
-      {user && (
+      {user && user.is_approved && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#141414]/5 pb-safe z-20">
           <div className="max-w-2xl mx-auto px-6 py-3 flex items-center justify-between">
             <button 
