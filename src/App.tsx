@@ -1164,13 +1164,15 @@ export default function App() {
               ) : (
                 <div className="grid gap-3">
                   {filteredCows.map(cow => (
-                    <button
+                    <motion.button
                       key={cow.id}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => {
                         setSelectedCowId(cow.id);
                         setView('detail');
                       }}
-                      className="bg-white p-4 rounded-3xl border border-[#141414]/5 flex items-center justify-between hover:shadow-md transition-all group text-left"
+                      className="bg-white p-4 rounded-3xl border border-[#141414]/5 flex items-center justify-between shadow-sm transition-all group text-left"
                     >
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-[#F5F5F0] rounded-2xl flex items-center justify-center text-[#5A5A40] overflow-hidden">
@@ -1195,7 +1197,7 @@ export default function App() {
                         </div>
                       </div>
                       <ChevronRight className="text-black/20 group-hover:text-[#5A5A40] transition-colors" />
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               )}
