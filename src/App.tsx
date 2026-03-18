@@ -1695,6 +1695,7 @@ export default function App() {
                 </div>
               </div>
             </motion.div>
+            </AuthGuard>
           )}
 
           {view === 'scan' && (
