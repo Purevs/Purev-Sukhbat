@@ -57,7 +57,7 @@ const cn = (...classes: string[]) => classes.filter(Boolean).join(' ');
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [view, setView] = useState<'list' | 'add' | 'detail' | 'scan' | 'landing' | 'reports' | 'admin' | 'forgotPin'>('landing');
+  const [view, setView] = useState<'list' | 'add' | 'detail' | 'scan' | 'landing' | 'reports' | 'admin' | 'forgotPin' | 'pending'>('landing');
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState('');
   const [landingTab, setLandingTab] = useState<'login' | 'register' | null>(null);
@@ -103,8 +103,13 @@ export default function App() {
           }
 
           if (userDoc.exists()) {
-            setUser({ id: userDoc.id, ...userDoc.data() } as User);
-            setView('list');
+            const userData = userDoc.data();
+            setUser({ id: userDoc.id, ...userData } as User);
+            if (userData.is_approved) {
+              setView('list');
+            } else {
+              setView('pending');
+            }
           } else {
             console.log('onAuthStateChanged: Document does not exist for UID:', firebaseUser.uid);
             setUser(null);
@@ -736,6 +741,12 @@ export default function App() {
 
       <main className="max-w-2xl mx-auto p-4 pb-24">
         {view === 'admin' && <AuthGuard><AdminView /></AuthGuard>}
+        {view === 'pending' && (
+          <div className="p-8 text-center bg-white rounded-[40px] shadow-xl border border-[#141414]/5">
+            <h2 className="text-xl font-bold mb-2">Таны бүртгэл хараахан батлагдаагүй байна.</h2>
+            <p className="text-gray-500">Админ таны бүртгэлийг хянаж байна. Түр хүлээнэ үү.</p>
+          </div>
+        )}
         {view === 'forgotPin' && (
           <motion.div
             key="forgotPin"

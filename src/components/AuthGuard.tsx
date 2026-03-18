@@ -14,7 +14,12 @@ export const AuthGuard = ({ children }: { children: React.ReactNode }) => {
         setUser(currentUser);
         // Firestore-оос хэрэглэгчийн мэдээллийг татаж авах
         try {
+          console.log("Fetching user doc for:", currentUser.uid);
           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          console.log("User doc exists:", userDoc.exists());
+          if (userDoc.exists()) {
+            console.log("User doc data:", userDoc.data());
+          }
           setStatus(userDoc.data()?.is_approved ? 'approved' : 'pending');
         } catch (error) {
           console.error("Error fetching user status:", error);
