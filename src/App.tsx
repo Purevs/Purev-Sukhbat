@@ -27,6 +27,7 @@ import {
   Printer,
   Shield
 } from 'lucide-react';
+import { AuthGuard } from './components/AuthGuard';
 import { 
   LineChart, 
   Line, 
@@ -734,7 +735,7 @@ export default function App() {
       </header>
 
       <main className="max-w-2xl mx-auto p-4 pb-24">
-        {view === 'admin' && <AdminView />}
+        {view === 'admin' && <AuthGuard><AdminView /></AuthGuard>}
         {view === 'forgotPin' && (
           <motion.div
             key="forgotPin"
@@ -915,13 +916,14 @@ export default function App() {
             </motion.div>
           )}
           {view === 'list' && (
-            <motion.div 
-              key="list"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-4"
-            >
+            <AuthGuard>
+              <motion.div 
+                key="list"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-4"
+              >
               {/* Notifications */}
               {(heatAlerts.length > 0 || birthAlerts.length > 0) && (
                 <div className="space-y-3">
@@ -1181,16 +1183,18 @@ export default function App() {
                 </div>
               )}
             </motion.div>
+            </AuthGuard>
           )}
 
           {view === 'add' && (
-            <motion.div 
-              key="add"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5"
-            >
+            <AuthGuard>
+              <motion.div 
+                key="add"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5"
+              >
               {/* Type Toggle */}
               <div className="flex p-1 bg-[#F5F5F0] rounded-2xl mb-8">
                 <button 
@@ -1400,16 +1404,18 @@ export default function App() {
                 </div>
               </form>
             </motion.div>
+            </AuthGuard>
           )}
 
           {view === 'detail' && cowDetail && (
-            <motion.div 
-              key="detail"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="space-y-6"
-            >
+            <AuthGuard>
+              <motion.div 
+                key="detail"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="space-y-6"
+              >
               {/* Info Card */}
               <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5">
                 <div className="flex justify-between items-start mb-6">
