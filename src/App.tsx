@@ -105,11 +105,7 @@ export default function App() {
           if (userDoc.exists()) {
             const userData = userDoc.data();
             setUser({ id: userDoc.id, ...userData } as User);
-            if (userData.is_approved) {
-              setView('list');
-            } else {
-              setView('pending');
-            }
+            setView('landing');
           } else {
             console.log('onAuthStateChanged: Document does not exist for UID:', firebaseUser.uid);
             setUser(null);
@@ -172,19 +168,8 @@ export default function App() {
   };
 
   useEffect(() => {
-    const userId = localStorage.getItem('farm_user_id');
-    if (userId) {
-      checkUser(userId);
-    } else {
-      setLoading(false);
-      setView('landing');
-    }
-  }, []);
-
-  useEffect(() => {
     if (user) {
       fetchCows();
-      localStorage.setItem('farm_user_id', user.id.toString());
     }
   }, [user]);
 
@@ -850,6 +835,14 @@ export default function App() {
 
               {landingTab === null ? (
                 <div className="space-y-4">
+                  {user && (
+                    <button 
+                      onClick={() => setView(user.is_approved ? 'list' : 'pending')}
+                      className="w-full bg-transparent text-[#5A5A40] py-2 font-bold underline mb-4"
+                    >
+                      Миний ферм рүү орох
+                    </button>
+                  )}
                   <button 
                     onClick={() => setLandingTab('login')}
                     className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98]"
