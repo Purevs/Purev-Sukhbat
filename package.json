@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": " "node dist-server/server.js",
+    "start": "node dist-server/server.js",
     "dev": "tsx server.ts",
     "build": "vite build && tsc -p tsconfig.server.json",
     "preview": "vite preview",
