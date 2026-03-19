@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "tsx server.ts",
+    "start": " "node dist-server/server.js",
     "dev": "tsx server.ts",
-    "build": "vite build",
+    "build": "vite build && tsc -p tsconfig.server.json",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
