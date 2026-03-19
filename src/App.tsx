@@ -162,7 +162,10 @@ export default function App() {
   const [forgotPinOtp, setForgotPinOtp] = useState('');
   const [newPin, setNewPin] = useState('');
   const [forgotPinError, setForgotPinError] = useState('');
-  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [lightboxData, setLightboxData] = useState<{ images: string[], index: number } | null>(null);
+  const [editYield, setEditYield] = useState<MilkYield | null>(null);
+  const [editAmount, setEditAmount] = useState<number>(0);
+  const [historyModal, setHistoryModal] = useState<MilkYield | null>(null);
 
   const verifyPin = () => {
     console.log('verifyPin: pinInput=', pinInput, 'user?.pin_code=', user?.pin_code);
@@ -177,6 +180,33 @@ export default function App() {
     } else {
       setPinError('Буруу PIN код байна.');
       setPinInput('');
+    }
+  };
+
+  const handleEditMilk = async () => {
+    if (!editYield || !selectedCowId) return;
+
+    try {
+      const yieldRef = doc(db, 'users', user!.id.toString(), 'cows', selectedCowId, 'milkYields', editYield.id);
+      
+      const historyEntry = {
+        oldAmount: editYield.amount,
+        newAmount: editAmount,
+        timestamp: serverTimestamp(),
+        changedBy: user!.id
+      };
+
+      // Update milk yield and append history
+      console.log('Updating milk yield:', yieldRef.path, 'to', editAmount);
+      await updateDoc(yieldRef, {
+        amount: editAmount,
+        history: [...(editYield.history || []), historyEntry]
+      });
+
+      fetchCowDetail(selectedCowId);
+      setEditYield(null);
+    } catch (err) {
+      console.error('Failed to edit milk yield:', err);
     }
   };
 
@@ -500,13 +530,41 @@ export default function App() {
     const session = formData.get('session') as string;
 
     try {
-      await addDoc(collection(db, 'users', user!.id.toString(), 'cows', selectedCowId!, 'milkYields'), {
-        amount,
-        date,
-        session,
-        created_at: serverTimestamp()
-      });
-      fetchCowDetail(selectedCowId!);
+      // Check if yield already exists for this date and session
+      const q = query(
+        collection(db, 'users', user!.id.toString(), 'cows', selectedCowId!, 'milkYields'),
+        where('date', '==', date),
+        where('session', '==', session)
+      );
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        // Update existing record
+        const docRef = querySnapshot.docs[0].ref;
+        const existingData = querySnapshot.docs[0].data();
+        
+        const historyEntry = {
+          oldAmount: existingData.amount,
+          newAmount: amount,
+          timestamp: serverTimestamp(),
+          changedBy: user!.id
+        };
+
+        await updateDoc(docRef, {
+          amount,
+          history: [...(existingData.history || []), historyEntry]
+        });
+      } else {
+        // Add new record
+        await addDoc(collection(db, 'users', user!.id.toString(), 'cows', selectedCowId!, 'milkYields'), {
+          amount,
+          date,
+          session,
+          created_at: serverTimestamp()
+        });
+      }
+      
+      await fetchCowDetail(selectedCowId!);
       (e.target as HTMLFormElement).reset();
     } catch (err) {
       console.error('Failed to add milk yield:', err);
@@ -1441,11 +1499,12 @@ export default function App() {
                   <div className="flex gap-4">
                     <div className="w-20 h-20 bg-[#F5F5F0] rounded-2xl flex items-center justify-center text-[#5A5A40] overflow-hidden">
                       {cowDetail.image_urls && cowDetail.image_urls.length > 0 ? (
-                        <div className="grid grid-cols-2 gap-2">
-                          {cowDetail.image_urls.map((url, index) => (
-                            <img key={index} src={`/api/image?url=${encodeURIComponent(url)}`} alt={`${cowDetail.tag_code} ${index}`} className="w-full h-20 object-cover rounded-xl cursor-pointer" onClick={() => setLightboxImage(url)} />
-                          ))}
-                        </div>
+                        <img 
+                          src={`/api/image?url=${encodeURIComponent(cowDetail.image_urls[0])}`} 
+                          alt={`${cowDetail.tag_code}`} 
+                          className="w-full h-full object-cover cursor-pointer" 
+                          onClick={() => setLightboxData({ images: cowDetail.image_urls, index: 0 })} 
+                        />
                       ) : (
                         <Milk size={32} />
                       )}
@@ -1559,79 +1618,81 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Total Yield Stat */}
-                <div className="mt-6 grid grid-cols-1 gap-4">
-                  <div className="bg-[#5A5A40] text-white p-6 rounded-[32px] shadow-lg flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-1">Нийт саасан сүү</p>
-                      <p className="text-3xl font-black">{cowDetail.yields.reduce((sum, y) => sum + y.amount, 0).toFixed(1)} <span className="text-lg font-normal">литр</span></p>
-                    </div>
-                    <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
-                      <TrendingUp size={24} />
+                {cowDetail.type === 'cow' && (
+                  <div className="mt-6 grid grid-cols-1 gap-4">
+                    <div className="bg-[#5A5A40] text-white p-6 rounded-[32px] shadow-lg flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-1">Нийт саасан сүү</p>
+                        <p className="text-3xl font-black">{cowDetail.yields.reduce((sum, y) => sum + y.amount, 0).toFixed(1)} <span className="text-lg font-normal">литр</span></p>
+                      </div>
+                      <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
+                        <TrendingUp size={24} />
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
 
-              {/* Milk Yield Chart */}
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-bold flex items-center gap-2">
-                    <TrendingUp size={20} className="text-[#5A5A40]" />
-                    Сүүний гарц (Литр)
-                  </h3>
+              {cowDetail.type === 'cow' && (
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="font-bold flex items-center gap-2">
+                      <TrendingUp size={20} className="text-[#5A5A40]" />
+                      Сүүний гарц (Литр)
+                    </h3>
+                  </div>
+                  <div className="h-48 w-full">
+                    {cowDetail.yields.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={(() => {
+                          // Group by date and separate by session
+                          const grouped = cowDetail.yields.reduce((acc: any, curr) => {
+                            const date = curr.date;
+                            if (!acc[date]) acc[date] = { date, morning: 0, evening: 0 };
+                            if (curr.session === 'morning') acc[date].morning += curr.amount;
+                            else acc[date].evening += curr.amount;
+                            return acc;
+                          }, {});
+                          return Object.values(grouped).reverse();
+                        })()}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
+                          <XAxis 
+                            dataKey="date" 
+                            tick={{ fontSize: 10 }} 
+                            tickFormatter={(val) => format(new Date(val), 'MM/dd')}
+                          />
+                          <YAxis tick={{ fontSize: 10 }} />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                          />
+                          <Line 
+                            name="Өглөө"
+                            type="monotone" 
+                            dataKey="morning" 
+                            stroke="#F27D26" 
+                            strokeWidth={3} 
+                            dot={{ fill: '#F27D26', strokeWidth: 2 }}
+                            activeDot={{ r: 6 }}
+                          />
+                          <Line 
+                            name="Орой"
+                            type="monotone" 
+                            dataKey="evening" 
+                            stroke="#4A90E2" 
+                            strokeWidth={3} 
+                            dot={{ fill: '#4A90E2', strokeWidth: 2 }}
+                            activeDot={{ r: 6 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-black/30 text-sm italic">
+                        Мэдээлэл байхгүй байна
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="h-48 w-full">
-                  {cowDetail.yields.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={(() => {
-                        // Group by date and separate by session
-                        const grouped = cowDetail.yields.reduce((acc: any, curr) => {
-                          const date = curr.date;
-                          if (!acc[date]) acc[date] = { date, morning: 0, evening: 0 };
-                          if (curr.session === 'morning') acc[date].morning += curr.amount;
-                          else acc[date].evening += curr.amount;
-                          return acc;
-                        }, {});
-                        return Object.values(grouped).reverse();
-                      })()}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
-                        <XAxis 
-                          dataKey="date" 
-                          tick={{ fontSize: 10 }} 
-                          tickFormatter={(val) => format(new Date(val), 'MM/dd')}
-                        />
-                        <YAxis tick={{ fontSize: 10 }} />
-                        <Tooltip 
-                          contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                        />
-                        <Line 
-                          name="Өглөө"
-                          type="monotone" 
-                          dataKey="morning" 
-                          stroke="#F27D26" 
-                          strokeWidth={3} 
-                          dot={{ fill: '#F27D26', strokeWidth: 2 }}
-                          activeDot={{ r: 6 }}
-                        />
-                        <Line 
-                          name="Орой"
-                          type="monotone" 
-                          dataKey="evening" 
-                          stroke="#4A90E2" 
-                          strokeWidth={3} 
-                          dot={{ fill: '#4A90E2', strokeWidth: 2 }}
-                          activeDot={{ r: 6 }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-black/30 text-sm italic">
-                      Мэдээлэл байхгүй байна
-                    </div>
-                  )}
-                </div>
-              </div>
+              )}
 
               {/* Add Yield Form */}
               <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5">
@@ -1680,20 +1741,8 @@ export default function App() {
                   Сүүлийн түүх
                 </h3>
                 <div className="space-y-2">
-                  {(() => {
-                    const grouped = cowDetail.yields.reduce((acc: any[], curr) => {
-                      const key = `${curr.date}-${curr.session}`;
-                      const existing = acc.find(item => `${item.date}-${item.session}` === key);
-                      if (existing) {
-                        existing.amount += curr.amount;
-                      } else {
-                        acc.push({ ...curr });
-                      }
-                      return acc;
-                    }, []);
-                    return grouped.slice(0, 10);
-                  })().map((y, idx) => (
-                    <div key={`${y.date}-${y.session}-${idx}`} className="flex justify-between items-center py-3 px-4 bg-[#F5F5F0]/50 rounded-2xl border border-black/5">
+                  {cowDetail.yields.slice().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10).map((y, idx) => (
+                    <div key={`${y.id}-${idx}`} className="flex justify-between items-center py-3 px-4 bg-[#F5F5F0]/50 rounded-2xl border border-black/5">
                       <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${y.session === 'morning' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
                           {y.session === 'morning' ? <TrendingUp size={18} /> : <TrendingUp size={18} className="rotate-180" />}
@@ -1705,7 +1754,17 @@ export default function App() {
                           </span>
                         </div>
                       </div>
-                      <span className={`font-black text-lg ${y.session === 'morning' ? 'text-orange-700' : 'text-blue-700'}`}>{y.amount.toFixed(1)} л</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-black text-lg ${y.session === 'morning' ? 'text-orange-700' : 'text-blue-700'}`}>{y.amount.toFixed(1)} л</span>
+                        {y.history && y.history.length > 0 && (
+                          <button onClick={() => setHistoryModal(y)} className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors">
+                            <History size={16} />
+                          </button>
+                        )}
+                        <button onClick={() => { setEditYield(y); setEditAmount(y.amount); }} className="p-2 text-[#5A5A40] hover:bg-[#F5F5F0] rounded-full transition-colors">
+                          <Edit2 size={16} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                   {cowDetail.yields.length === 0 && (
@@ -1713,6 +1772,33 @@ export default function App() {
                   )}
                 </div>
               </div>
+              {editYield && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white p-6 rounded-3xl shadow-xl w-full max-w-sm">
+                    <h3 className="font-bold mb-4">Сүүний хэмжээ засах</h3>
+                    <input type="number" value={editAmount} onChange={(e) => setEditAmount(parseFloat(e.target.value))} className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none mb-4" />
+                    <div className="flex gap-2">
+                      <button onClick={() => setEditYield(null)} className="flex-1 p-4 bg-gray-200 rounded-2xl font-bold">Цуцлах</button>
+                      <button onClick={handleEditMilk} className="flex-1 p-4 bg-[#5A5A40] text-white rounded-2xl font-bold">Хадгалах</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {historyModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white p-6 rounded-3xl shadow-xl w-full max-w-sm">
+                    <h3 className="font-bold mb-4">Түүх</h3>
+                    <div className="space-y-2">
+                      {historyModal.history?.map((h: any, idx: number) => (
+                        <div key={idx} className="text-sm">
+                          {h.timestamp ? format(new Date(h.timestamp.toDate()), 'yyyy-MM-dd HH:mm') : 'N/A'}: {h.oldAmount} to {h.newAmount}
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={() => setHistoryModal(null)} className="w-full p-4 bg-gray-200 rounded-2xl font-bold mt-4">Хаах</button>
+                  </div>
+                </div>
+              )}
             </motion.div>
             </AuthGuard>
           )}
@@ -1888,9 +1974,31 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
-        {lightboxImage && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setLightboxImage(null)}>
-            <img src={`/api/image?url=${encodeURIComponent(lightboxImage)}`} alt="Lightbox" className="max-w-full max-h-full object-contain rounded-2xl" />
+        {lightboxData && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setLightboxData(null)}>
+            <div className="relative max-w-4xl w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+              <img 
+                src={`/api/image?url=${encodeURIComponent(lightboxData.images[lightboxData.index])}`} 
+                alt="Lightbox" 
+                className="max-w-full max-h-full object-contain rounded-2xl" 
+              />
+              {lightboxData.images.length > 1 && (
+                <>
+                  <button 
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 p-2 rounded-full text-white"
+                    onClick={() => setLightboxData(prev => prev ? { ...prev, index: (prev.index - 1 + prev.images.length) % prev.images.length } : null)}
+                  >
+                    &lt;
+                  </button>
+                  <button 
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 p-2 rounded-full text-white"
+                    onClick={() => setLightboxData(prev => prev ? { ...prev, index: (prev.index + 1) % prev.images.length } : null)}
+                  >
+                    &gt;
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         )}
       </main>
