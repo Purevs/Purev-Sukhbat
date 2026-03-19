@@ -100,12 +100,19 @@ const transporter = nodemailer.createTransport({
 });
 
 async function startServer() {
-  const app = express();
-  const PORT = Number(process.env.PORT) || 3000;
+ const app = express();
+ const PORT = Number(process.env.PORT) || 3000;
 
-app.listen(PORT, "0.0.0.0", () => {
+ app.use(express.json({ limit: "10mb" }));
+
+ // routes...
+ // app.get(...)
+
+ app.listen(PORT, "0.0.0.0", () => {
  console.log(`Server running on http://localhost:${PORT}`);
-});
+ });
+}
+startServer();
 
 
   app.use(express.json({ limit: '10mb' }));
