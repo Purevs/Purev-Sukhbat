@@ -100,15 +100,8 @@ const transporter = nodemailer.createTransport({
 });
 
 async function startServer() {
- const app = express();
- const PORT = Number(process.env.PORT);
-if (!PORT) throw new Error("PORT env is missing");
-
-app.listen(PORT, "0.0.0.0", () => {
- console.log(`Listening on ${PORT}`);
-});
-startServer();
-
+  const app = express();
+  const PORT = 3000;
 
   app.use(express.json({ limit: '10mb' }));
 
@@ -436,12 +429,9 @@ startServer();
     }
   });
 
-
-
-app.listen(Number(process.env.PORT) || 3000, "0.0.0.0", () => {
- console.log(`Server running on port ${Number(process.env.PORT) || 3000}`);
-});
-
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
 }
 
 startServer();

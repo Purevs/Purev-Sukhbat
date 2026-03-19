@@ -4,13 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
- "start": "node dist-server/server.js",
- "dev": "tsx server.ts",
- "build": "vite build && tsc -p tsconfig.server.json",
- "preview": "vite preview",
- "clean": "rm -rf dist",
- "lint": "tsc --noEmit"
-},
+    "dev": "tsx server.ts",
+    "build": "vite build",
+    "preview": "vite preview",
+    "clean": "rm -rf dist",
+    "lint": "tsc --noEmit"
+  },
   "dependencies": {
     "@google/genai": "^1.29.0",
     "@sendgrid/mail": "^8.1.6",
