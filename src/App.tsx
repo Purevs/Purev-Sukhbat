@@ -192,7 +192,7 @@ export default function App() {
       const historyEntry = {
         oldAmount: editYield.amount,
         newAmount: editAmount,
-        timestamp: serverTimestamp(),
+        timestamp: new Date(),
         changedBy: user!.id
       };
 
@@ -546,7 +546,7 @@ export default function App() {
         const historyEntry = {
           oldAmount: existingData.amount,
           newAmount: amount,
-          timestamp: serverTimestamp(),
+          timestamp: new Date(),
           changedBy: user!.id
         };
 
