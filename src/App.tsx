@@ -2050,6 +2050,12 @@ export default function App() {
         {lightboxData && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setLightboxData(null)}>
             <div className="relative max-w-4xl w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+              <button 
+                className="absolute top-4 right-4 bg-black/50 p-2 rounded-full text-white z-50"
+                onClick={() => setLightboxData(null)}
+              >
+                <X size={24} />
+              </button>
               <img 
                 src={lightboxData.images[lightboxData.index]} 
                 alt="Lightbox" 
