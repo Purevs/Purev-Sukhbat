@@ -1549,23 +1549,26 @@ export default function App() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="space-y-6"
               >
-              {/* Info Card */}
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="flex gap-4">
-                    <div className="w-20 h-20 bg-[#F5F5F0] rounded-2xl flex items-center justify-center text-[#5A5A40] overflow-hidden">
-                      {cowDetail.image_urls && cowDetail.image_urls.length > 0 ? (
-                        <img 
-                          src={`/api/image?url=${encodeURIComponent(cowDetail.image_urls[0])}`} 
-                          alt={`${cowDetail.tag_code}`} 
-                          className="w-full h-full object-cover cursor-pointer" 
-                          onClick={() => setLightboxData({ images: cowDetail.image_urls, index: 0 })} 
-                        />
-                      ) : (
-                        <Milk size={32} />
-                      )}
-                    </div>
-                    <div>
+{/* Info Card */}
+<div className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5">
+  <div className="flex justify-between items-start mb-6">
+    <div className="flex gap-4">
+      <div className="w-20 h-20 bg-[#F5F5F0] rounded-2xl flex items-center justify-center text-[#5A5A40] overflow-hidden">
+        {cowDetail.image_urls && cowDetail.image_urls.length > 0 ? (
+          <img 
+            src={cowDetail.image_urls[0]} 
+            alt={`${cowDetail.tag_code}`} 
+            referrerPolicy="no-referrer"
+            className="w-full h-full object-cover cursor-pointer" 
+            onClick={() => setLightboxData({ images: cowDetail.image_urls, index: 0 })} 
+          />
+        ) : (
+          <Milk size={32} />
+        )}
+      </div>
+    </div>
+  </div>
+</div>
                       <h2 className="text-3xl font-black tracking-tighter">#{cowDetail.tag_code}</h2>
                       <p className="text-[#5A5A40] font-medium">{cowDetail.breed}</p>
                     </div>
