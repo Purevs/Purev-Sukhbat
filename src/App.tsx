@@ -25,7 +25,8 @@ import {
   PieChart,
   Download,
   Printer,
-  Shield
+  Shield,
+  LogOut
 } from 'lucide-react';
 import { AuthGuard } from './components/AuthGuard';
 import { 
@@ -804,10 +805,11 @@ export default function App() {
                 )}
                 <button 
                   onClick={handleLogout}
-                  className="p-2 hover:bg-black/5 rounded-full transition-colors text-black/40"
-                  title="Хэрэглэгч солих"
+                  className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-full hover:bg-red-100 transition-colors font-bold text-sm"
+                  title="Гарах"
                 >
-                  <UserIcon size={20} />
+                  <LogOut size={18} />
+                  Гарах
                 </button>
                 <button 
                   onClick={() => {
