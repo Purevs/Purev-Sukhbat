@@ -1263,7 +1263,7 @@ export default function App() {
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-[#F5F5F0] rounded-2xl flex items-center justify-center text-[#5A5A40] overflow-hidden">
                           {cow.image_urls && cow.image_urls.length > 0 ? (
-                            <img src={`/api/image?url=${encodeURIComponent(cow.image_urls[0])}`} alt={cow.tag_code} className="w-full h-full object-cover" />
+                            <img src={cow.image_urls[0]} alt={cow.tag_code} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                           ) : (
                             <Milk size={24} />
                           )}
