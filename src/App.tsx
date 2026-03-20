@@ -131,6 +131,7 @@ export default function App() {
   }, []);
   const [emailInput, setEmailInput] = useState('');
   const [rememberEmail, setRememberEmail] = useState(false);
+<<<<<<< HEAD
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail');
@@ -139,7 +140,16 @@ export default function App() {
       setRememberEmail(true);
     }
   }, []);
+
   const [registrationType, setRegistrationType] = useState<'cow' | 'calf'>('cow');
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    if (savedEmail) {
+      setEmailInput(savedEmail);
+      setRememberEmail(true);
+    }
+  }, []);
+
   const [cows, setCows] = useState<Cow[]>([]);
   const [selectedCowId, setSelectedCowId] = useState<string | null>(null);
   const [cowDetail, setCowDetail] = useState<CowDetail | null>(null);
@@ -387,16 +397,22 @@ export default function App() {
         const email = formData.get('email') as string;
         const password = formData.get('password') as string;
         
+<<<<<<< HEAD
 		const email = formData.get('email') as string;
         const password = formData.get('password') as string;
         
+=======
+>>>>>>> ac22bd1fd347318eb50444982ea9225e7d833d50
         if (rememberEmail) {
           localStorage.setItem('rememberedEmail', email);
         } else {
           localStorage.removeItem('rememberedEmail');
         }
         
+<<<<<<< HEAD
         await signInWithEmailAndPassword(auth, email, password);
+=======
+>>>>>>> ac22bd1fd347318eb50444982ea9225e7d833d50
         await signInWithEmailAndPassword(auth, email, password);
         // onAuthStateChanged will handle setting user and view
       } else {
@@ -966,6 +982,18 @@ export default function App() {
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Имэйл хаяг</label>
                         <input name="email" type="email" required value={emailInput} onChange={(e) => setEmailInput(e.target.value)} className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: bat@example.com" />
+
+                      </div>
+                      <div className="flex items-center gap-2 ml-1">
+                        <input 
+                          type="checkbox" 
+                          id="remember" 
+                          checked={rememberEmail} 
+                          onChange={(e) => setRememberEmail(e.target.checked)}
+                          className="rounded text-[#5A5A40] focus:ring-[#5A5A40]"
+                        />
+                        <label htmlFor="remember" className="text-xs text-black/60">Имэйл хаягийг санах</label>
+
                       </div>
                       <div className="flex items-center gap-2 ml-1">
                         <input 
@@ -1722,7 +1750,7 @@ export default function App() {
                 </div>
               )}
 
-             {/* Add Yield Form */}
+              {/* Add Yield Form */}
               {cowDetail.type === 'cow' && (
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5">
                   <h3 className="font-bold mb-4 flex items-center gap-2">
