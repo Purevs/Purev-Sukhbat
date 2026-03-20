@@ -1697,44 +1697,46 @@ export default function App() {
               )}
 
               {/* Add Yield Form */}
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5">
-                <h3 className="font-bold mb-4 flex items-center gap-2">
-                  <Plus size={20} className="text-[#5A5A40]" />
-                  Саалийн хэмжээ бүртгэх
-                </h3>
-                <form onSubmit={handleAddMilk} className="space-y-3">
-                  <div className="flex gap-2">
-                    <input 
-                      name="date" 
-                      type="date" 
-                      required 
-                      defaultValue={format(new Date(), 'yyyy-MM-dd')}
-                      className="flex-1 p-3 bg-[#F5F5F0] rounded-xl border-none text-sm" 
-                    />
-                    <select 
-                      name="session" 
-                      className="w-32 p-3 bg-[#F5F5F0] rounded-xl border-none text-sm font-bold"
-                    >
-                      <option value="morning">Өглөө</option>
-                      <option value="evening">Орой</option>
-                    </select>
-                  </div>
-                  <div className="flex gap-2">
-                    <input 
-                      name="amount" 
-                      type="number" 
-                      step="0.1" 
-                      required 
-                      placeholder="Литр"
-                      className="flex-1 p-3 bg-[#F5F5F0] rounded-xl border-none text-sm" 
-                    />
-                    <button type="submit" className="bg-[#5A5A40] text-white px-6 rounded-xl hover:bg-[#4A4A30] font-bold flex items-center gap-2">
-                      <Save size={18} />
-                      Хадгалах
-                    </button>
-                  </div>
-                </form>
-              </div>
+              {cowDetail.type === 'cow' && (
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5">
+                  <h3 className="font-bold mb-4 flex items-center gap-2">
+                    <Plus size={20} className="text-[#5A5A40]" />
+                    Саалийн хэмжээ бүртгэх
+                  </h3>
+                  <form onSubmit={handleAddMilk} className="space-y-3">
+                    <div className="flex gap-2">
+                      <input 
+                        name="date" 
+                        type="date" 
+                        required 
+                        defaultValue={format(new Date(), 'yyyy-MM-dd')}
+                        className="flex-1 p-3 bg-[#F5F5F0] rounded-xl border-none text-sm" 
+                      />
+                      <select 
+                        name="session" 
+                        className="w-32 p-3 bg-[#F5F5F0] rounded-xl border-none text-sm font-bold"
+                      >
+                        <option value="morning">Өглөө</option>
+                        <option value="evening">Орой</option>
+                      </select>
+                    </div>
+                    <div className="flex gap-2">
+                      <input 
+                        name="amount" 
+                        type="number" 
+                        step="0.1" 
+                        required 
+                        placeholder="Литр"
+                        className="flex-1 p-3 bg-[#F5F5F0] rounded-xl border-none text-sm" 
+                      />
+                      <button type="submit" className="bg-[#5A5A40] text-white px-6 rounded-xl hover:bg-[#4A4A30] font-bold flex items-center gap-2">
+                        <Save size={18} />
+                        Хадгалах
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
 
               {/* History */}
               <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5">
