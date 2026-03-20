@@ -397,22 +397,20 @@ export default function App() {
         const email = formData.get('email') as string;
         const password = formData.get('password') as string;
         
-<<<<<<< HEAD
+
 		const email = formData.get('email') as string;
         const password = formData.get('password') as string;
         
-=======
->>>>>>> ac22bd1fd347318eb50444982ea9225e7d833d50
+
         if (rememberEmail) {
           localStorage.setItem('rememberedEmail', email);
         } else {
           localStorage.removeItem('rememberedEmail');
         }
         
-<<<<<<< HEAD
+
         await signInWithEmailAndPassword(auth, email, password);
-=======
->>>>>>> ac22bd1fd347318eb50444982ea9225e7d833d50
+
         await signInWithEmailAndPassword(auth, email, password);
         // onAuthStateChanged will handle setting user and view
       } else {
