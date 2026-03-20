@@ -131,7 +131,6 @@ export default function App() {
   }, []);
   const [emailInput, setEmailInput] = useState('');
   const [rememberEmail, setRememberEmail] = useState(false);
-<<<<<<< HEAD
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail');
