@@ -1696,7 +1696,7 @@ export default function App() {
                 </div>
               )}
 
-              {/* Add Yield Form */}
+             {/* Add Yield Form */}
               {cowDetail.type === 'cow' && (
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5">
                   <h3 className="font-bold mb-4 flex items-center gap-2">
