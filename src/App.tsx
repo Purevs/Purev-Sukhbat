@@ -2009,8 +2009,9 @@ export default function App() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setLightboxData(null)}>
             <div className="relative max-w-4xl w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
               <img 
-                src={`/api/image?url=${encodeURIComponent(lightboxData.images[lightboxData.index])}`} 
+                src={lightboxData.images[lightboxData.index]} 
                 alt="Lightbox" 
+                referrerPolicy="no-referrer"
                 className="max-w-full max-h-full object-contain rounded-2xl" 
               />
               {lightboxData.images.length > 1 && (
