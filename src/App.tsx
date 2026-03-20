@@ -245,11 +245,13 @@ export default function App() {
 
       // 1. Fetch all cows
       const cowsSnapshot = await getDocs(collection(db, 'users', user.id.toString(), 'cows'));
+      const cowTypes = new Map(cowsSnapshot.docs.map(doc => [doc.id, doc.data().type]));
       const cowIds = cowsSnapshot.docs.map(doc => doc.id);
 
       // 2. Fetch milk yields for each cow
       let allYields: MilkYield[] = [];
       for (const cowId of cowIds) {
+        if (cowTypes.get(cowId) === 'calf') continue;
         const yieldsSnapshot = await getDocs(
           query(
             collection(db, 'users', user.id.toString(), 'cows', cowId, 'milkYields'),
