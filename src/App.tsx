@@ -131,15 +131,6 @@ export default function App() {
   }, []);
   const [emailInput, setEmailInput] = useState('');
   const [rememberEmail, setRememberEmail] = useState(false);
-
-  useEffect(() => {
-    const savedEmail = localStorage.getItem('rememberedEmail');
-    if (savedEmail) {
-      setEmailInput(savedEmail);
-      setRememberEmail(true);
-    }
-  }, []);
-
   const [registrationType, setRegistrationType] = useState<'cow' | 'calf'>('cow');
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail');
@@ -396,20 +387,12 @@ export default function App() {
         const email = formData.get('email') as string;
         const password = formData.get('password') as string;
         
-
-		const email = formData.get('email') as string;
-        const password = formData.get('password') as string;
-        
-
         if (rememberEmail) {
           localStorage.setItem('rememberedEmail', email);
         } else {
           localStorage.removeItem('rememberedEmail');
         }
         
-
-        await signInWithEmailAndPassword(auth, email, password);
-
         await signInWithEmailAndPassword(auth, email, password);
         // onAuthStateChanged will handle setting user and view
       } else {
@@ -979,7 +962,6 @@ export default function App() {
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Имэйл хаяг</label>
                         <input name="email" type="email" required value={emailInput} onChange={(e) => setEmailInput(e.target.value)} className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: bat@example.com" />
-
                       </div>
                       <div className="flex items-center gap-2 ml-1">
                         <input 
@@ -990,17 +972,10 @@ export default function App() {
                           className="rounded text-[#5A5A40] focus:ring-[#5A5A40]"
                         />
                         <label htmlFor="remember" className="text-xs text-black/60">Имэйл хаягийг санах</label>
-
                       </div>
-                      <div className="flex items-center gap-2 ml-1">
-                        <input 
-                          type="checkbox" 
-                          id="remember" 
-                          checked={rememberEmail} 
-                          onChange={(e) => setRememberEmail(e.target.checked)}
-                          className="rounded text-[#5A5A40] focus:ring-[#5A5A40]"
-                        />
-                        <label htmlFor="remember" className="text-xs text-black/60">Имэйл хаягийг санах</label>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Нууц үг</label>
+                        <input name="password" type="password" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Нууц үг" />
                       </div>
                       <button 
                         type="submit" 
@@ -1546,26 +1521,24 @@ export default function App() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="space-y-6"
               >
-{/* Info Card */}
-<div className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5">
-  <div className="flex justify-between items-start mb-6">
-    <div className="flex gap-4">
-      <div className="w-20 h-20 bg-[#F5F5F0] rounded-2xl flex items-center justify-center text-[#5A5A40] overflow-hidden">
-        {cowDetail.image_urls && cowDetail.image_urls.length > 0 ? (
-        <img 
-  src={cowDetail.image_urls[0]} 
-  alt={`${cowDetail.tag_code}`} 
-  referrerPolicy="no-referrer"  // <--- Энд оруулна
-  className="w-full h-full object-cover cursor-pointer" 
-  onClick={() => setLightboxData({ images: cowDetail.image_urls, index: 0 })} 
-/>
-        ) : (
-          <Milk size={32} />
-        )}
-      </div>
-    </div>
-  </div>
-</div>
+              {/* Info Card */}
+              <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#141414]/5">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex gap-4">
+                    <div className="w-20 h-20 bg-[#F5F5F0] rounded-2xl flex items-center justify-center text-[#5A5A40] overflow-hidden">
+                      {cowDetail.image_urls && cowDetail.image_urls.length > 0 ? (
+                        <img 
+                          src={cowDetail.image_urls[0]} 
+                          alt={`${cowDetail.tag_code}`} 
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover cursor-pointer" 
+                          onClick={() => setLightboxData({ images: cowDetail.image_urls, index: 0 })} 
+                        />
+                      ) : (
+                        <Milk size={32} />
+                      )}
+                    </div>
+                    <div>
                       <h2 className="text-3xl font-black tracking-tighter">#{cowDetail.tag_code}</h2>
                       <p className="text-[#5A5A40] font-medium">{cowDetail.breed}</p>
                     </div>
