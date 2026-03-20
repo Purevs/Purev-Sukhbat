@@ -645,8 +645,8 @@ export default function App() {
   };
 
   const filteredCows = cows.filter(cow => {
-    const matchesSearch = cow.tag_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         cow.breed.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = (cow.tag_code || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (cow.breed || '').toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesBreed = !filters.breed || cow.breed === filters.breed;
     
