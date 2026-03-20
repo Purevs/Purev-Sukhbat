@@ -47,7 +47,7 @@ import { Cow, CowDetail, MilkYield, User } from './types';
 import { db, auth, storage } from './firebase';
 import { 
   collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, 
-  query, where, onSnapshot, orderBy, serverTimestamp, setDoc 
+  query, where, onSnapshot, orderBy, serverTimestamp, setDoc, limit, startAfter 
 } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
@@ -141,6 +141,8 @@ export default function App() {
   }, []);
 
   const [cows, setCows] = useState<Cow[]>([]);
+  const [lastVisible, setLastVisible] = useState<any>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [selectedCowId, setSelectedCowId] = useState<string | null>(null);
   const [cowDetail, setCowDetail] = useState<CowDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -434,10 +436,15 @@ export default function App() {
     if (!user) return;
     setLoading(true);
     try {
-      const q = query(collection(db, 'users', user.id.toString(), 'cows'), orderBy('created_at', 'desc'));
+      const q = query(
+        collection(db, 'users', user.id.toString(), 'cows'), 
+        orderBy('created_at', 'desc'),
+        limit(20)
+      );
       const querySnapshot = await getDocs(q);
       const cows = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Cow));
       setCows(cows);
+      setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
     } catch (err) {
       console.error('Failed to fetch cows:', err);
     } finally {
@@ -445,19 +452,45 @@ export default function App() {
     }
   };
 
-  const fetchCowDetail = async (id: string) => {
+  const fetchMoreCows = async () => {
+    if (!user || !lastVisible) return;
+    setLoadingMore(true);
     try {
-      const cowDoc = await getDoc(doc(db, 'users', user!.id.toString(), 'cows', id));
+      const q = query(
+        collection(db, 'users', user.id.toString(), 'cows'), 
+        orderBy('created_at', 'desc'),
+        startAfter(lastVisible),
+        limit(20)
+      );
+      const querySnapshot = await getDocs(q);
+      const newCows = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Cow));
+      setCows(prev => [...prev, ...newCows]);
+      setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
+    } catch (err) {
+      console.error('Failed to fetch more cows:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const fetchCowDetail = async (cowId: string) => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const cowDoc = await getDoc(doc(db, 'users', user.id.toString(), 'cows', cowId));
       if (cowDoc.exists()) {
-        const cowData = { id: cowDoc.id, ...cowDoc.data() } as unknown as CowDetail;
+        const cowData = { id: cowDoc.id, ...cowDoc.data() } as CowDetail;
         
-        const yieldsSnapshot = await getDocs(query(collection(db, 'users', user!.id.toString(), 'cows', id, 'milkYields'), orderBy('date', 'desc')));
-        const yields = yieldsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as MilkYield));
+        // Fetch milk yields
+        const yieldsSnapshot = await getDocs(collection(db, 'users', user.id.toString(), 'cows', cowId, 'milkYields'));
+        cowData.yields = yieldsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MilkYield));
         
-        setCowDetail({ ...cowData, yields });
+        setCowDetail(cowData);
       }
     } catch (err) {
       console.error('Failed to fetch cow detail:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1285,6 +1318,15 @@ export default function App() {
                       <ChevronRight className="text-black/20 group-hover:text-[#5A5A40] transition-colors" />
                     </motion.button>
                   ))}
+                  {cows.length > 0 && !searchQuery && !filters.breed && filters.ageRange === 'all' && filters.calvingRange === 'all' && (
+                    <button
+                      onClick={fetchMoreCows}
+                      disabled={loadingMore}
+                      className="w-full py-4 bg-white border border-[#141414]/5 rounded-3xl text-center font-bold text-[#5A5A40] hover:bg-[#F5F5F0] transition-colors mt-4"
+                    >
+                      {loadingMore ? 'Уншиж байна...' : 'Илүүг харах'}
+                    </button>
+                  )}
                 </div>
               )}
             </motion.div>
