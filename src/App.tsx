@@ -129,6 +129,16 @@ export default function App() {
     });
     return unsubscribe;
   }, []);
+  const [emailInput, setEmailInput] = useState('');
+  const [rememberEmail, setRememberEmail] = useState(false);
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    if (savedEmail) {
+      setEmailInput(savedEmail);
+      setRememberEmail(true);
+    }
+  }, []);
   const [registrationType, setRegistrationType] = useState<'cow' | 'calf'>('cow');
   const [cows, setCows] = useState<Cow[]>([]);
   const [selectedCowId, setSelectedCowId] = useState<string | null>(null);
@@ -377,6 +387,16 @@ export default function App() {
         const email = formData.get('email') as string;
         const password = formData.get('password') as string;
         
+		const email = formData.get('email') as string;
+        const password = formData.get('password') as string;
+        
+        if (rememberEmail) {
+          localStorage.setItem('rememberedEmail', email);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+        }
+        
+        await signInWithEmailAndPassword(auth, email, password);
         await signInWithEmailAndPassword(auth, email, password);
         // onAuthStateChanged will handle setting user and view
       } else {
@@ -945,11 +965,17 @@ export default function App() {
                       )}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Имэйл хаяг</label>
-                        <input name="email" type="email" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: bat@example.com" />
+                        <input name="email" type="email" required value={emailInput} onChange={(e) => setEmailInput(e.target.value)} className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: bat@example.com" />
                       </div>
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Нууц үг</label>
-                        <input name="password" type="password" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Нууц үг" />
+                      <div className="flex items-center gap-2 ml-1">
+                        <input 
+                          type="checkbox" 
+                          id="remember" 
+                          checked={rememberEmail} 
+                          onChange={(e) => setRememberEmail(e.target.checked)}
+                          className="rounded text-[#5A5A40] focus:ring-[#5A5A40]"
+                        />
+                        <label htmlFor="remember" className="text-xs text-black/60">Имэйл хаягийг санах</label>
                       </div>
                       <button 
                         type="submit" 
