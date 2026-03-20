@@ -398,14 +398,18 @@ export default function App() {
         await signInWithEmailAndPassword(auth, email, password);
         // onAuthStateChanged will handle setting user and view
       } else {
-        const name = formData.get('name') as string;
+        const full_name = formData.get('full_name') as string;
+        const phone = formData.get('phone') as string;
+        const pin = formData.get('pin') as string;
         const farm_name = formData.get('farm_name') as string;
         const email = formData.get('email') as string;
         const password = formData.get('password') as string;
         
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const newUser = {
-          name,
+          full_name,
+          phone,
+          pin,
           farm_name,
           email,
           created_at: serverTimestamp(),
@@ -1027,8 +1031,16 @@ export default function App() {
                         </div>
                       )}
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Нэр</label>
-                        <input name="name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Бат" />
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Овог нэр</label>
+                        <input name="full_name" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: Бат Бат" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Гар утасны дугаар</label>
+                        <input name="phone" type="tel" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Жишээ: 99112233" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">PIN код (4 оронтой)</label>
+                        <input name="pin" type="password" maxLength={4} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="****" />
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Фермийн нэр</label>
