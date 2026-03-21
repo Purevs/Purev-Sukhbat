@@ -16,6 +16,7 @@ export interface Cow {
   breed: string | null;
   age: number;
   gender: 'male' | 'female' | null;
+  milkingStatus: 'milking' | 'dry' | null;
   mother_tag: string | null;
   birth_date: string | null;
   calvings: number;

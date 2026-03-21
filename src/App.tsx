@@ -192,6 +192,7 @@ export default function App() {
     ageRange: 'all', // all, young (0-2), adult (3-7), senior (8+)
     calvingRange: 'all', // all, none (0), few (1-3), many (4+)
     gender: 'all', // all, female, male
+    milkingStatus: 'all', // all, milking, dry
   });
 
   const [showPinModal, setShowPinModal] = useState(false);
@@ -711,6 +712,7 @@ export default function App() {
     
     const matchesBreed = !filters.breed || cow.breed === filters.breed;
     const matchesGender = filters.gender === 'all' || (cow.gender || 'female') === filters.gender;
+    const matchesMilkingStatus = filters.milkingStatus === 'all' || (cow.milkingStatus || 'milking') === filters.milkingStatus;
     
     let matchesAge = true;
     if (filters.ageRange === 'young') matchesAge = cow.age !== null && cow.age <= 2;
@@ -722,7 +724,7 @@ export default function App() {
     else if (filters.calvingRange === 'few') matchesCalving = cow.calvings !== null && cow.calvings >= 1 && cow.calvings <= 3;
     else if (filters.calvingRange === 'many') matchesCalving = cow.calvings !== null && cow.calvings >= 4;
 
-    return matchesSearch && matchesType && matchesBreed && matchesGender && matchesAge && matchesCalving;
+    return matchesSearch && matchesType && matchesBreed && matchesGender && matchesMilkingStatus && matchesAge && matchesCalving;
   });
 
   const uniqueBreeds = Array.from(new Set(cows.map(c => c.breed).filter(Boolean)));
@@ -1432,17 +1434,31 @@ export default function App() {
                           </select>
                         </div>
                       </div>
-                      <div className="mt-4">
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-2">Хүйс</label>
-                        <select 
-                          value={filters.gender}
-                          onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
-                          className="w-full p-2 bg-[#F5F5F0] rounded-xl text-xs font-bold border-none focus:ring-1 focus:ring-[#5A5A40]/20"
-                        >
-                          <option value="all">Бүгд</option>
-                          <option value="female">Эм</option>
-                          <option value="male">Эр</option>
-                        </select>
+                      <div className="grid grid-cols-2 gap-4 mt-4">
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-2">Хүйс</label>
+                          <select 
+                            value={filters.gender}
+                            onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
+                            className="w-full p-2 bg-[#F5F5F0] rounded-xl text-xs font-bold border-none focus:ring-1 focus:ring-[#5A5A40]/20"
+                          >
+                            <option value="all">Бүгд</option>
+                            <option value="female">Эм</option>
+                            <option value="male">Эр</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-2">Саалийн статус</label>
+                          <select 
+                            value={filters.milkingStatus}
+                            onChange={(e) => setFilters({ ...filters, milkingStatus: e.target.value })}
+                            className="w-full p-2 bg-[#F5F5F0] rounded-xl text-xs font-bold border-none focus:ring-1 focus:ring-[#5A5A40]/20"
+                          >
+                            <option value="all">Бүгд</option>
+                            <option value="milking">Саагдаж байгаа</option>
+                            <option value="dry">Ширгэсэн</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
                   </motion.div>
@@ -1627,6 +1643,18 @@ export default function App() {
                           >
                             <option value="female">Эм</option>
                             <option value="male">Эр</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Саалийн статус</label>
+                          <select 
+                            name="milkingStatus" 
+                            required 
+                            defaultValue={isEditing ? cowDetail?.milkingStatus || 'milking' : 'milking'}
+                            className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20 text-sm"
+                          >
+                            <option value="milking">Саагдаж байгаа</option>
+                            <option value="dry">Ширгэсэн</option>
                           </select>
                         </div>
                       </div>
