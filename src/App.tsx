@@ -787,6 +787,7 @@ export default function App() {
     const [subscriptionDurations, setSubscriptionDurations] = useState<Record<string, string>>({});
 
     const approveUser = async (userId: string) => {
+      console.log('Approving user:', userId);
       const duration = subscriptionDurations[userId] || '1month';
       const endDate = new Date();
       if (duration === '1month') endDate.setMonth(endDate.getMonth() + 1);
@@ -794,15 +795,21 @@ export default function App() {
       else if (duration === '6months') endDate.setMonth(endDate.getMonth() + 6);
       else if (duration === '1year') endDate.setFullYear(endDate.getFullYear() + 1);
       
-      await updateDoc(doc(db, 'users', userId), { 
-        is_approved: true, 
-        subscription_end_date: endDate.toISOString() 
-      });
-      setPendingUsers(pendingUsers.filter(u => u.id !== userId));
-      setAllUsers(allUsers.map(u => u.id === userId ? { ...u, is_approved: true, subscription_end_date: endDate.toISOString() } : u));
+      try {
+        await updateDoc(doc(db, 'users', userId), { 
+          is_approved: true, 
+          subscription_end_date: endDate.toISOString() 
+        });
+        console.log('User approved successfully');
+        setPendingUsers(pendingUsers.filter(u => u.id !== userId));
+        setAllUsers(allUsers.map(u => u.id === userId ? { ...u, is_approved: true, subscription_end_date: endDate.toISOString() } : u));
+      } catch (error) {
+        console.error('Error approving user:', error);
+      }
     };
 
     const extendSubscription = async (userId: string, currentEndDate: string | null | undefined) => {
+      console.log('Extending subscription for user:', userId);
       const duration = subscriptionDurations[userId] || '1month';
       const endDate = currentEndDate ? new Date(currentEndDate) : new Date();
       if (duration === '1month') endDate.setMonth(endDate.getMonth() + 1);
@@ -810,10 +817,15 @@ export default function App() {
       else if (duration === '6months') endDate.setMonth(endDate.getMonth() + 6);
       else if (duration === '1year') endDate.setFullYear(endDate.getFullYear() + 1);
       
-      await updateDoc(doc(db, 'users', userId), { 
-        subscription_end_date: endDate.toISOString() 
-      });
-      setAllUsers(allUsers.map(u => u.id === userId ? { ...u, subscription_end_date: endDate.toISOString() } : u));
+      try {
+        await updateDoc(doc(db, 'users', userId), { 
+          subscription_end_date: endDate.toISOString() 
+        });
+        console.log('Subscription extended successfully');
+        setAllUsers(allUsers.map(u => u.id === userId ? { ...u, subscription_end_date: endDate.toISOString() } : u));
+      } catch (error) {
+        console.error('Error extending subscription:', error);
+      }
     };
 
     if (loading) return <div className="p-4">Уншиж байна...</div>;
