@@ -2088,7 +2088,7 @@ export default function App() {
                             else acc[date].evening += curr.amount;
                             return acc;
                           }, {});
-                          return Object.values(grouped).reverse();
+                          return Object.values(grouped).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
                         })()}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
                           <XAxis 
