@@ -1458,6 +1458,7 @@ export default function App() {
                 </div>
               ) : (
                 <div className="grid gap-3">
+                  <p className="text-sm font-bold text-black/60 mb-2">Нийт: {filteredCows.length} үхэр</p>
                   {filteredCows.map(cow => (
                     <motion.button
                       key={cow.id}
