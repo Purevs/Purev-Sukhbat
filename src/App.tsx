@@ -812,6 +812,12 @@ export default function App() {
       console.log('Extending subscription for user:', userId);
       const duration = subscriptionDurations[userId] || '1month';
       const endDate = currentEndDate ? new Date(currentEndDate) : new Date();
+      
+      // If current subscription is expired, start from today
+      if (endDate < new Date()) {
+        endDate.setTime(new Date().getTime());
+      }
+      
       if (duration === '1month') endDate.setMonth(endDate.getMonth() + 1);
       else if (duration === '3months') endDate.setMonth(endDate.getMonth() + 3);
       else if (duration === '6months') endDate.setMonth(endDate.getMonth() + 6);
@@ -867,7 +873,14 @@ export default function App() {
                 <p className="font-bold">{u.name}</p>
                 <p className="text-sm text-gray-500">Ферм: {u.farm_name}</p>
                 <p className="text-sm text-gray-500">Үхрийн тоо: {u.cowCount}</p>
-                <p className="text-sm text-gray-500">Хугацаа: {u.subscription_end_date ? new Date(u.subscription_end_date).toLocaleDateString() : 'Тодорхойгүй'}</p>
+                <p className="text-sm text-gray-500">
+                  Хугацаа: {u.subscription_end_date ? new Date(u.subscription_end_date).toLocaleDateString() : 'Тодорхойгүй'}
+                  {u.subscription_end_date && (
+                    <span className={`ml-2 font-bold ${new Date(u.subscription_end_date) < new Date() ? 'text-red-600' : 'text-green-600'}`}>
+                      ({new Date(u.subscription_end_date) < new Date() ? 'Дууссан' : `${Math.ceil((new Date(u.subscription_end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} хоног үлдсэн`})
+                    </span>
+                  )}
+                </p>
               </div>
               <div className="flex flex-col items-end gap-2">
                 <div className={`px-2 py-1 rounded-full text-xs ${u.is_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
