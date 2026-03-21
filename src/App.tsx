@@ -564,6 +564,12 @@ export default function App() {
     data.type = registrationType;
     data.user_id = user.id.toString();
     
+    if (data.gender === 'male' || registrationType === 'calf') {
+      data.milkingStatus = null;
+    } else if (!data.milkingStatus) {
+      data.milkingStatus = 'milking';
+    }
+    
     // Add image data if exists
     const imageUrls: string[] = [];
     if (imagePreview.length > 0) {
@@ -1645,18 +1651,20 @@ export default function App() {
                             <option value="male">Эр</option>
                           </select>
                         </div>
-                        <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Саалийн статус</label>
-                          <select 
-                            name="milkingStatus" 
-                            required 
-                            defaultValue={isEditing ? cowDetail?.milkingStatus || 'milking' : 'milking'}
-                            className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20 text-sm"
-                          >
-                            <option value="milking">Саагдаж байгаа</option>
-                            <option value="dry">Ширгэсэн</option>
-                          </select>
-                        </div>
+                        {cowGender === 'female' && (
+                          <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Саалийн статус</label>
+                            <select 
+                              name="milkingStatus" 
+                              required 
+                              defaultValue={isEditing ? cowDetail?.milkingStatus || 'milking' : 'milking'}
+                              className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20 text-sm"
+                            >
+                              <option value="milking">Саагдаж байгаа</option>
+                              <option value="dry">Ширгэсэн</option>
+                            </select>
+                          </div>
+                        )}
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -1720,6 +1728,17 @@ export default function App() {
                           />
                         </div>
                         <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Үүлдэр</label>
+                          <input 
+                            name="breed" 
+                            defaultValue={isEditing ? cowDetail?.breed || '' : ''}
+                            className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" 
+                            placeholder="Жишээ: Алатау" 
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
                           <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Хүйс</label>
                           <select 
                             name="gender" 
@@ -1731,15 +1750,15 @@ export default function App() {
                             <option value="male">Эр</option>
                           </select>
                         </div>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Эхийн код</label>
-                        <input 
-                          name="mother_tag" 
-                          defaultValue={isEditing ? cowDetail?.mother_tag || '' : ''}
-                          className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" 
-                          placeholder="Эхийн ээмэгний код" 
-                        />
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Эхийн код</label>
+                          <input 
+                            name="mother_tag" 
+                            defaultValue={isEditing ? cowDetail?.mother_tag || '' : ''}
+                            className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" 
+                            placeholder="Эхийн ээмэгний код" 
+                          />
+                        </div>
                       </div>
                     </>
                   )}
