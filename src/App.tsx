@@ -165,6 +165,7 @@ export default function App() {
   const [emailInput, setEmailInput] = useState('');
   const [rememberEmail, setRememberEmail] = useState(false);
   const [registrationType, setRegistrationType] = useState<'cow' | 'calf'>('cow');
+  const [cowGender, setCowGender] = useState('female');
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail');
     if (savedEmail) {
@@ -190,6 +191,7 @@ export default function App() {
     breed: '',
     ageRange: 'all', // all, young (0-2), adult (3-7), senior (8+)
     calvingRange: 'all', // all, none (0), few (1-3), many (4+)
+    gender: 'all', // all, female, male
   });
 
   const [showPinModal, setShowPinModal] = useState(false);
@@ -708,6 +710,7 @@ export default function App() {
     const matchesType = cow.type === cowTypeFilter;
     
     const matchesBreed = !filters.breed || cow.breed === filters.breed;
+    const matchesGender = filters.gender === 'all' || cow.gender === filters.gender;
     
     let matchesAge = true;
     if (filters.ageRange === 'young') matchesAge = cow.age !== null && cow.age <= 2;
@@ -719,7 +722,7 @@ export default function App() {
     else if (filters.calvingRange === 'few') matchesCalving = cow.calvings !== null && cow.calvings >= 1 && cow.calvings <= 3;
     else if (filters.calvingRange === 'many') matchesCalving = cow.calvings !== null && cow.calvings >= 4;
 
-    return matchesSearch && matchesType && matchesBreed && matchesAge && matchesCalving;
+    return matchesSearch && matchesType && matchesBreed && matchesGender && matchesAge && matchesCalving;
   });
 
   const uniqueBreeds = Array.from(new Set(cows.map(c => c.breed).filter(Boolean)));
@@ -1429,6 +1432,18 @@ export default function App() {
                           </select>
                         </div>
                       </div>
+                      <div className="mt-4">
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-2">Хүйс</label>
+                        <select 
+                          value={filters.gender}
+                          onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
+                          className="w-full p-2 bg-[#F5F5F0] rounded-xl text-xs font-bold border-none focus:ring-1 focus:ring-[#5A5A40]/20"
+                        >
+                          <option value="all">Бүгд</option>
+                          <option value="female">Эм</option>
+                          <option value="male">Эр</option>
+                        </select>
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -1601,6 +1616,21 @@ export default function App() {
                           />
                         </div>
                         <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Хүйс</label>
+                          <select 
+                            name="gender" 
+                            required 
+                            defaultValue={isEditing ? cowDetail?.gender || 'female' : 'female'}
+                            onChange={(e) => setCowGender(e.target.value)}
+                            className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20 text-sm"
+                          >
+                            <option value="female">Эм</option>
+                            <option value="male">Эр</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
                           <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Нас</label>
                           <input 
                             name="age" 
@@ -1611,36 +1641,41 @@ export default function App() {
                           />
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Хэд тугалсан</label>
-                          <input 
-                            name="calvings" 
-                            type="number" 
-                            defaultValue={isEditing ? cowDetail?.calvings : ''}
-                            className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" 
-                            placeholder="0" 
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Сүүлд тугалсан огноо</label>
-                          <input 
-                            name="last_calving_date" 
-                            type="date" 
-                            defaultValue={isEditing ? cowDetail?.last_calving_date || '' : ''}
-                            className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" 
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Буханд гарсан огноо</label>
-                        <input 
-                          name="insemination_date" 
-                          type="date" 
-                          defaultValue={isEditing ? cowDetail?.insemination_date || '' : ''}
-                          className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" 
-                        />
-                      </div>
+                      
+                      {cowGender === 'female' && (
+                        <>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Хэд тугалсан</label>
+                              <input 
+                                name="calvings" 
+                                type="number" 
+                                defaultValue={isEditing ? cowDetail?.calvings : ''}
+                                className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" 
+                                placeholder="0" 
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Сүүлд тугалсан огноо</label>
+                              <input 
+                                name="last_calving_date" 
+                                type="date" 
+                                defaultValue={isEditing ? cowDetail?.last_calving_date || '' : ''}
+                                className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" 
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-black/40 mb-1">Буханд гарсан огноо</label>
+                            <input 
+                              name="insemination_date" 
+                              type="date" 
+                              defaultValue={isEditing ? cowDetail?.insemination_date || '' : ''}
+                              className="w-full p-3 bg-[#F5F5F0] rounded-xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" 
+                            />
+                          </div>
+                        </>
+                      )}
                     </>
                   ) : (
                     <>
