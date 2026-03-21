@@ -1242,8 +1242,8 @@ export default function App() {
               {/* Dashboard Summary */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-white p-4 rounded-3xl border border-[#141414]/5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1">Нийт үнээ</p>
-                  <p className="text-2xl font-black">{cows.length}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1">Үнээ / Тугал</p>
+                  <p className="text-2xl font-black">{cows.filter(c => c.type === 'cow').length} / {cows.filter(c => c.type === 'calf').length}</p>
                 </div>
                 <div className="bg-white p-4 rounded-3xl border border-[#141414]/5">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1">Мэдэгдэл</p>
@@ -1844,8 +1844,8 @@ export default function App() {
                         </>
                       ) : (
                         <>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-black/40">Хүйс / Төрсөн</p>
-                          <p className="font-bold">{cowDetail.gender === 'female' ? 'Охин' : 'Эр'} / {cowDetail.birth_date}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-black/40">Үүлдэр / Хүйс</p>
+                          <p className="font-bold">{cowDetail.breed || 'Бүртгэлгүй'} / {cowDetail.gender === 'female' ? 'Охин' : 'Эр'}</p>
                         </>
                       )}
                     </div>
@@ -1862,8 +1862,21 @@ export default function App() {
                         </>
                       ) : (
                         <>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-black/40">Эхийн код</p>
-                          <p className="font-bold">{cowDetail.mother_tag || 'Бүртгэлгүй'}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-black/40">Нас / Эхийн код</p>
+                          <p className="font-bold">
+                            {cowDetail.birth_date ? (() => {
+                              const birthDate = new Date(cowDetail.birth_date);
+                              const today = new Date();
+                              let months = (today.getFullYear() - birthDate.getFullYear()) * 12 + (today.getMonth() - birthDate.getMonth());
+                              let days = today.getDate() - birthDate.getDate();
+                              if (days < 0) {
+                                months--;
+                                const lastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                                days += lastMonth.getDate();
+                              }
+                              return `${months} сар ${days} өдөр`;
+                            })() : 'Бүртгэлгүй'} / {cowDetail.mother_tag || 'Бүртгэлгүй'}
+                          </p>
                         </>
                       )}
                     </div>
