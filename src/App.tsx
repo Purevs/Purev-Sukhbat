@@ -1301,6 +1301,32 @@ export default function App() {
                 </div>
               )}
 
+              {/* Notifications */}
+              {user && (
+                <div className="space-y-2 mb-4">
+                  {!user.is_approved && (
+                    <div className="p-4 bg-yellow-100 text-yellow-800 rounded-3xl text-sm font-bold">
+                      Таны бүртгэл хараахан батлагдаагүй байна. Админ батлахыг хүлээнэ үү.
+                    </div>
+                  )}
+                  {user.is_approved && user.subscription_end_date && new Date(user.subscription_end_date) >= new Date() && new Date(user.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000) && (
+                    <div className="p-4 bg-green-100 text-green-800 rounded-3xl text-sm font-bold">
+                      Таны бүртгэл идэвхижлээ. Хугацаа: {Math.round((new Date(user.subscription_end_date).getTime() - new Date(user.created_at).getTime()) / (30 * 24 * 60 * 60 * 1000))} сар.
+                    </div>
+                  )}
+                  {user.is_approved && user.subscription_end_date && new Date(user.subscription_end_date) < new Date() && (
+                    <div className="p-4 bg-red-100 text-red-800 rounded-3xl text-sm font-bold">
+                      Таны бүртгэлийн хугацаа дууссан байна. Админтай холбогдож хугацаагаа сунгуулна уу.
+                    </div>
+                  )}
+                  {user.is_approved && user.subscription_end_date && new Date(user.subscription_end_date) >= new Date() && new Date(user.subscription_end_date) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) && (
+                    <div className="p-4 bg-blue-100 text-blue-800 rounded-3xl text-sm font-bold">
+                      Таны бүртгэлийн хугацаа 7 хоногийн дотор дуусах гэж байна.
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Dashboard Summary */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-white p-4 rounded-3xl border border-[#141414]/5">
