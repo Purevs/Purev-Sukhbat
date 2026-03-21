@@ -784,10 +784,36 @@ export default function App() {
       fetchData();
     }, []);
 
+    const [subscriptionDurations, setSubscriptionDurations] = useState<Record<string, string>>({});
+
     const approveUser = async (userId: string) => {
-      await updateDoc(doc(db, 'users', userId), { is_approved: true });
+      const duration = subscriptionDurations[userId] || '1month';
+      const endDate = new Date();
+      if (duration === '1month') endDate.setMonth(endDate.getMonth() + 1);
+      else if (duration === '3months') endDate.setMonth(endDate.getMonth() + 3);
+      else if (duration === '6months') endDate.setMonth(endDate.getMonth() + 6);
+      else if (duration === '1year') endDate.setFullYear(endDate.getFullYear() + 1);
+      
+      await updateDoc(doc(db, 'users', userId), { 
+        is_approved: true, 
+        subscription_end_date: endDate.toISOString() 
+      });
       setPendingUsers(pendingUsers.filter(u => u.id !== userId));
-      setAllUsers(allUsers.map(u => u.id === userId ? { ...u, is_approved: true } : u));
+      setAllUsers(allUsers.map(u => u.id === userId ? { ...u, is_approved: true, subscription_end_date: endDate.toISOString() } : u));
+    };
+
+    const extendSubscription = async (userId: string, currentEndDate: string | null | undefined) => {
+      const duration = subscriptionDurations[userId] || '1month';
+      const endDate = currentEndDate ? new Date(currentEndDate) : new Date();
+      if (duration === '1month') endDate.setMonth(endDate.getMonth() + 1);
+      else if (duration === '3months') endDate.setMonth(endDate.getMonth() + 3);
+      else if (duration === '6months') endDate.setMonth(endDate.getMonth() + 6);
+      else if (duration === '1year') endDate.setFullYear(endDate.getFullYear() + 1);
+      
+      await updateDoc(doc(db, 'users', userId), { 
+        subscription_end_date: endDate.toISOString() 
+      });
+      setAllUsers(allUsers.map(u => u.id === userId ? { ...u, subscription_end_date: endDate.toISOString() } : u));
     };
 
     if (loading) return <div className="p-4">Уншиж байна...</div>;
@@ -804,7 +830,19 @@ export default function App() {
                 <p className="font-bold">{u.name}</p>
                 <p className="text-sm text-gray-500">{u.email}</p>
               </div>
-              <button onClick={() => approveUser(u.id)} className="bg-[#5A5A40] text-white px-4 py-2 rounded-xl">Батлах</button>
+              <div className="flex items-center gap-2">
+                <select 
+                  className="p-2 bg-[#F5F5F0] rounded-xl text-sm"
+                  value={subscriptionDurations[u.id] || '1month'}
+                  onChange={(e) => setSubscriptionDurations({...subscriptionDurations, [u.id]: e.target.value})}
+                >
+                  <option value="1month">1 сар</option>
+                  <option value="3months">3 сар</option>
+                  <option value="6months">6 сар</option>
+                  <option value="1year">1 жил</option>
+                </select>
+                <button onClick={() => approveUser(u.id)} className="bg-[#5A5A40] text-white px-4 py-2 rounded-xl">Батлах</button>
+              </div>
             </div>
           ))}
         </section>
@@ -817,9 +855,27 @@ export default function App() {
                 <p className="font-bold">{u.name}</p>
                 <p className="text-sm text-gray-500">Ферм: {u.farm_name}</p>
                 <p className="text-sm text-gray-500">Үхрийн тоо: {u.cowCount}</p>
+                <p className="text-sm text-gray-500">Хугацаа: {u.subscription_end_date ? new Date(u.subscription_end_date).toLocaleDateString() : 'Тодорхойгүй'}</p>
               </div>
-              <div className={`px-2 py-1 rounded-full text-xs ${u.is_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                {u.is_approved ? 'Батлагдсан' : 'Хүлээгдэж буй'}
+              <div className="flex flex-col items-end gap-2">
+                <div className={`px-2 py-1 rounded-full text-xs ${u.is_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                  {u.is_approved ? 'Батлагдсан' : 'Хүлээгдэж буй'}
+                </div>
+                {u.is_approved && (
+                  <div className="flex items-center gap-2">
+                    <select 
+                      className="p-1 bg-[#F5F5F0] rounded-xl text-xs"
+                      value={subscriptionDurations[u.id] || '1month'}
+                      onChange={(e) => setSubscriptionDurations({...subscriptionDurations, [u.id]: e.target.value})}
+                    >
+                      <option value="1month">1 сар</option>
+                      <option value="3months">3 сар</option>
+                      <option value="6months">6 сар</option>
+                      <option value="1year">1 жил</option>
+                    </select>
+                    <button onClick={() => extendSubscription(u.id, u.subscription_end_date)} className="bg-[#5A5A40] text-white px-2 py-1 rounded-xl text-xs">Сунгах</button>
+                  </div>
+                )}
               </div>
             </div>
           ))}

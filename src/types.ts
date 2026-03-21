@@ -7,6 +7,7 @@ export interface User {
   created_at: string;
   is_approved: boolean;
   role?: 'admin' | 'user';
+  subscription_end_date?: string | null;
 }
 
 export interface Cow {
