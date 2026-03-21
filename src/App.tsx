@@ -710,7 +710,7 @@ export default function App() {
     const matchesType = cow.type === cowTypeFilter;
     
     const matchesBreed = !filters.breed || cow.breed === filters.breed;
-    const matchesGender = filters.gender === 'all' || cow.gender === filters.gender;
+    const matchesGender = filters.gender === 'all' || (cow.gender || 'female') === filters.gender;
     
     let matchesAge = true;
     if (filters.ageRange === 'young') matchesAge = cow.age !== null && cow.age <= 2;
