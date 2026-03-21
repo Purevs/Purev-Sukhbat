@@ -58,12 +58,16 @@ const cn = (...classes: string[]) => classes.filter(Boolean).join(' ');
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [view, setView] = useState<'list' | 'add' | 'detail' | 'scan' | 'landing' | 'reports' | 'admin' | 'forgotPin' | 'pending'>('pending');
+  const [view, setView] = useState<'list' | 'add' | 'detail' | 'scan' | 'landing' | 'reports' | 'admin' | 'forgotPin' | 'forgotPassword' | 'pending'>('pending');
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState('');
   const [landingTab, setLandingTab] = useState<'login' | 'register' | null>(null);
   const [pendingOtp, setPendingOtp] = useState<string | null>(null);
   const [otpSent, setOtpSent] = useState(false);
+  
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordError, setForgotPasswordError] = useState('');
+  const [forgotPasswordStep, setForgotPasswordStep] = useState<'email' | 'confirmation'>('email');
 
   // Inactivity logout
   useEffect(() => {
@@ -176,6 +180,7 @@ export default function App() {
   const [cowDetail, setCowDetail] = useState<CowDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [cowTypeFilter, setCowTypeFilter] = useState<'cow' | 'calf'>('cow');
   const [imagePreview, setImagePreview] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -672,9 +677,35 @@ export default function App() {
     setShowPinModal(true);
   };
 
+  const removeImage = async (imageUrl: string) => {
+    if (!cowDetail || !user) return;
+    
+    if (!confirm('Та энэ зургийг устгахдаа итгэлтэй байна уу?')) return;
+
+    const newImageUrls = cowDetail.image_urls.filter(url => url !== imageUrl);
+    
+    try {
+      await updateDoc(doc(db, 'users', user.id.toString(), 'cows', cowDetail.id), {
+        image_urls: newImageUrls
+      });
+      setCowDetail({ ...cowDetail, image_urls: newImageUrls });
+      
+      if (newImageUrls.length === 0) {
+        setLightboxData(null);
+      } else {
+        setLightboxData(prev => prev ? { ...prev, images: newImageUrls, index: Math.min(prev.index, newImageUrls.length - 1) } : null);
+      }
+    } catch (err) {
+      console.error('Failed to remove image:', err);
+      alert('Зураг устгахад алдаа гарлаа.');
+    }
+  };
+
   const filteredCows = cows.filter(cow => {
     const matchesSearch = (cow.tag_code || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (cow.breed || '').toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesType = cow.type === cowTypeFilter;
     
     const matchesBreed = !filters.breed || cow.breed === filters.breed;
     
@@ -688,7 +719,7 @@ export default function App() {
     else if (filters.calvingRange === 'few') matchesCalving = cow.calvings !== null && cow.calvings >= 1 && cow.calvings <= 3;
     else if (filters.calvingRange === 'many') matchesCalving = cow.calvings !== null && cow.calvings >= 4;
 
-    return matchesSearch && matchesBreed && matchesAge && matchesCalving;
+    return matchesSearch && matchesType && matchesBreed && matchesAge && matchesCalving;
   });
 
   const uniqueBreeds = Array.from(new Set(cows.map(c => c.breed).filter(Boolean)));
@@ -839,16 +870,6 @@ export default function App() {
                   <LogOut size={18} />
                   Гарах
                 </button>
-                <button 
-                  onClick={() => {
-                    setIsEditing(false);
-                    setImagePreview([]);
-                    setView('add');
-                  }}
-                  className="bg-[#5A5A40] text-white p-2 rounded-full shadow-lg hover:bg-[#4A4A30] transition-colors"
-                >
-                  <Plus size={24} />
-                </button>
               </>
             )}
             {view === 'reports' && (
@@ -955,13 +976,74 @@ export default function App() {
                   const q = query(collection(db, 'users'), where('email', '==', forgotPinEmail));
                   const snapshot = await getDocs(q);
                   await updateDoc(snapshot.docs[0].ref, { pin_code: newPin });
+                  setForgotPinStep('confirmation');
+                  setForgotPinError('');
+                }} className="w-full bg-[#5A5A40] text-white py-4 rounded-2xl font-bold">Хадгалах</button>
+              </div>
+            )}
+            
+            {forgotPinStep === 'confirmation' && (
+              <div className="space-y-4 text-center">
+                <p className="text-lg font-bold">PIN код амжилттай солигдлоо.</p>
+                <button onClick={() => {
                   setForgotPinStep('email');
                   setForgotPinEmail('');
                   setForgotPinOtp('');
                   setNewPin('');
-                  setForgotPinError('PIN код амжилттай солигдлоо.');
                   setView('landing');
-                }} className="w-full bg-[#5A5A40] text-white py-4 rounded-2xl font-bold">Хадгалах</button>
+                }} className="w-full bg-[#5A5A40] text-white py-4 rounded-2xl font-bold">Нэвтрэх хуудас руу буцах</button>
+              </div>
+            )}
+          </motion.div>
+        )}
+        {view === 'forgotPassword' && (
+          <motion.div
+            key="forgotPassword"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white p-8 rounded-[40px] shadow-xl border border-[#141414]/5 space-y-4"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Нууц үг сэргээх</h2>
+              <button onClick={() => setView('landing')} className="text-sm text-black/40 hover:text-black">Буцах</button>
+            </div>
+            
+            {forgotPasswordError && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
+                <AlertCircle size={16} />
+                {forgotPasswordError}
+              </div>
+            )}
+
+            {forgotPasswordStep === 'email' && (
+              <div className="space-y-4">
+                <input type="email" value={forgotPasswordEmail} onChange={(e) => setForgotPasswordEmail(e.target.value)} className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none" placeholder="Имэйл хаяг" />
+                <button onClick={async () => {
+                  // Verify email exists
+                  const q = query(collection(db, 'users'), where('email', '==', forgotPasswordEmail));
+                  const snapshot = await getDocs(q);
+                  if (snapshot.empty) {
+                    setForgotPasswordError('Энэ имэйлээр бүртгэлтэй хэрэглэгч олдсонгүй.');
+                    return;
+                  }
+                  // In a real app, we would send a password reset email via Firebase Auth
+                  // For now, we simulate this by sending a link to the user's email
+                  await addDoc(collection(db, 'mail'), { to: forgotPasswordEmail, message: { subject: 'Нууц үг сэргээх', text: `Нууц үгээ сэргээх холбоос: ${window.location.origin}/reset-password` } });
+                  setForgotPasswordStep('confirmation');
+                  setForgotPasswordError('Нууц үг сэргээх холбоос таны имэйл рүү илгээгдлээ.');
+                }} className="w-full bg-[#5A5A40] text-white py-4 rounded-2xl font-bold">Илгээх</button>
+              </div>
+            )}
+            
+            {forgotPasswordStep === 'confirmation' && (
+              <div className="space-y-4 text-center">
+                <p className="text-lg font-bold">Нууц үг сэргээх холбоос илгээгдлээ.</p>
+                <button onClick={() => {
+                  setForgotPasswordStep('email');
+                  setForgotPasswordEmail('');
+                  setView('landing');
+                }} className="w-full bg-[#5A5A40] text-white py-4 rounded-2xl font-bold">Нэвтрэх хуудас руу буцах</button>
               </div>
             )}
           </motion.div>
@@ -1043,6 +1125,13 @@ export default function App() {
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Нууц үг</label>
                         <input name="password" type="password" required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none focus:ring-2 focus:ring-[#5A5A40]/20" placeholder="Нууц үг" />
+                        <button 
+                          type="button" 
+                          onClick={() => setView('forgotPassword')}
+                          className="text-xs text-[#5A5A40] font-bold mt-2 ml-1 hover:underline"
+                        >
+                          Нууц үгээ мартсан уу?
+                        </button>
                       </div>
                       <button 
                         type="submit" 
@@ -1207,6 +1296,20 @@ export default function App() {
               {/* Search & Scan */}
               <div className="space-y-3">
                 <div className="flex gap-2">
+                  <button 
+                    onClick={() => setCowTypeFilter('cow')}
+                    className={cn("flex-1 py-2 rounded-xl text-sm font-bold transition-colors", cowTypeFilter === 'cow' ? "bg-[#5A5A40] text-white" : "bg-white text-black/40")}
+                  >
+                    Үнээ
+                  </button>
+                  <button 
+                    onClick={() => setCowTypeFilter('calf')}
+                    className={cn("flex-1 py-2 rounded-xl text-sm font-bold transition-colors", cowTypeFilter === 'calf' ? "bg-[#5A5A40] text-white" : "bg-white text-black/40")}
+                  >
+                    Тугал
+                  </button>
+                </div>
+                <div className="flex gap-2">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-black/40" size={18} />
                     <input 
@@ -1241,6 +1344,17 @@ export default function App() {
                     <QrCode size={24} />
                   </button>
                 </div>
+                <button 
+                  onClick={() => {
+                    setIsEditing(false);
+                    setImagePreview([]);
+                    setView('add');
+                  }}
+                  className="w-full flex items-center justify-center gap-2 bg-[#5A5A40] text-white py-3 rounded-2xl font-bold hover:bg-[#4A4A30] transition-colors"
+                >
+                  <Plus size={20} />
+                  Шинэ үнээ/тугал нэмэх
+                </button>
 
                 {showFilters && (
                   <motion.div 
@@ -2102,6 +2216,12 @@ export default function App() {
                 onClick={() => setLightboxData(null)}
               >
                 <X size={24} />
+              </button>
+              <button 
+                className="absolute top-4 left-4 bg-black/50 p-2 rounded-full text-red-500 z-50"
+                onClick={() => removeImage(lightboxData.images[lightboxData.index])}
+              >
+                <Trash2 size={24} />
               </button>
               <img 
                 src={lightboxData.images[lightboxData.index]} 
