@@ -51,14 +51,14 @@ import {
   query, where, onSnapshot, orderBy, serverTimestamp, setDoc, limit, startAfter 
 } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail, confirmPasswordReset } from 'firebase/auth';
 
 // Utility for tailwind classes
 const cn = (...classes: string[]) => classes.filter(Boolean).join(' ');
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [view, setView] = useState<'list' | 'add' | 'detail' | 'scan' | 'landing' | 'reports' | 'admin' | 'forgotPin' | 'forgotPassword' | 'pending'>('pending');
+  const [view, setView] = useState<'list' | 'add' | 'detail' | 'scan' | 'landing' | 'reports' | 'admin' | 'forgotPin' | 'forgotPassword' | 'resetPassword' | 'pending'>('pending');
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState('');
   const [landingTab, setLandingTab] = useState<'login' | 'register' | null>(null);
@@ -172,6 +172,14 @@ export default function App() {
       setEmailInput(savedEmail);
       setRememberEmail(true);
     }
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+    const oobCode = urlParams.get('oobCode');
+    if (mode === 'resetPassword' && oobCode) {
+      setResetPasswordCode(oobCode);
+      setView('resetPassword');
+    }
   }, []);
 
   const [cows, setCows] = useState<Cow[]>([]);
@@ -210,6 +218,11 @@ export default function App() {
   const [forgotPinEmail, setForgotPinEmail] = useState('');
   const [forgotPinOtp, setForgotPinOtp] = useState('');
   const [newPin, setNewPin] = useState('');
+  const [resetPasswordCode, setResetPasswordCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetPasswordError, setResetPasswordError] = useState('');
+  const [resetPasswordSuccess, setResetPasswordSuccess] = useState(false);
   const [forgotPinError, setForgotPinError] = useState('');
   const [lightboxData, setLightboxData] = useState<{ images: string[], index: number } | null>(null);
   const [editYield, setEditYield] = useState<MilkYield | null>(null);
@@ -1112,18 +1125,13 @@ export default function App() {
               <div className="space-y-4">
                 <input type="email" value={forgotPasswordEmail} onChange={(e) => setForgotPasswordEmail(e.target.value)} className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none" placeholder="Имэйл хаяг" />
                 <button onClick={async () => {
-                  // Verify email exists
-                  const q = query(collection(db, 'users'), where('email', '==', forgotPasswordEmail));
-                  const snapshot = await getDocs(q);
-                  if (snapshot.empty) {
-                    setForgotPasswordError('Энэ имэйлээр бүртгэлтэй хэрэглэгч олдсонгүй.');
-                    return;
+                  try {
+                    await sendPasswordResetEmail(auth, forgotPasswordEmail);
+                    setForgotPasswordStep('confirmation');
+                    setForgotPasswordError('Нууц үг сэргээх холбоос таны имэйл рүү илгээгдлээ.');
+                  } catch (error) {
+                    setForgotPasswordError('Имэйл илгээхэд алдаа гарлаа. Имэйл хаягаа шалгана уу.');
                   }
-                  // In a real app, we would send a password reset email via Firebase Auth
-                  // For now, we simulate this by sending a link to the user's email
-                  await addDoc(collection(db, 'mail'), { to: forgotPasswordEmail, message: { subject: 'Нууц үг сэргээх', text: `Нууц үгээ сэргээх холбоос: ${window.location.origin}/reset-password` } });
-                  setForgotPasswordStep('confirmation');
-                  setForgotPasswordError('Нууц үг сэргээх холбоос таны имэйл рүү илгээгдлээ.');
                 }} className="w-full bg-[#5A5A40] text-white py-4 rounded-2xl font-bold">Илгээх</button>
               </div>
             )}
@@ -1136,6 +1144,46 @@ export default function App() {
                   setForgotPasswordEmail('');
                   setView('landing');
                 }} className="w-full bg-[#5A5A40] text-white py-4 rounded-2xl font-bold">Нэвтрэх хуудас руу буцах</button>
+              </div>
+            )}
+          </motion.div>
+        )}
+        {view === 'resetPassword' && (
+          <motion.div
+            key="resetPassword"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white p-8 rounded-[40px] shadow-xl border border-[#141414]/5 space-y-4"
+          >
+            <h2 className="text-xl font-bold mb-4">Нууц үг шинэчлэх</h2>
+            {resetPasswordError && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
+                <AlertCircle size={16} />
+                {resetPasswordError}
+              </div>
+            )}
+            {resetPasswordSuccess ? (
+              <div className="space-y-4 text-center">
+                <p className="text-lg font-bold">Нууц үг амжилттай шинэчлэгдлээ.</p>
+                <button onClick={() => setView('landing')} className="w-full bg-[#5A5A40] text-white py-4 rounded-2xl font-bold">Нэвтрэх хуудас руу буцах</button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none" placeholder="Шинэ нууц үг" />
+                <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none" placeholder="Нууц үг давтах" />
+                <button onClick={async () => {
+                  if (newPassword !== confirmPassword) {
+                    setResetPasswordError('Нууц үг таарахгүй байна.');
+                    return;
+                  }
+                  try {
+                    await confirmPasswordReset(auth, resetPasswordCode, newPassword);
+                    setResetPasswordSuccess(true);
+                  } catch (error) {
+                    setResetPasswordError('Нууц үг шинэчлэхэд алдаа гарлаа.');
+                  }
+                }} className="w-full bg-[#5A5A40] text-white py-4 rounded-2xl font-bold">Шинэчлэх</button>
               </div>
             )}
           </motion.div>
