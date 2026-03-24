@@ -472,7 +472,11 @@ export default function App() {
       }
     } catch (err: any) {
       console.error('Authentication failed:', err);
-      setAuthError(err.message || 'Алдаа гарлаа. Дахин оролдоно уу.');
+      if (err.code === 'auth/invalid-credential') {
+        setAuthError('Имэйл эсвэл нууц үг буруу байна.');
+      } else {
+        setAuthError(err.message || 'Алдаа гарлаа. Дахин оролдоно уу.');
+      }
     } finally {
       setAuthLoading(false);
     }
@@ -2676,6 +2680,12 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* Footer */}
+      <footer className="p-6 text-center text-black/40 text-xs space-y-1">
+        <p>Утас: 99216051 | Имэйл: info@mpfarm.org</p>
+        <p>© 2026 mpfarm.org. Хуулиар хамгаалагдсан.</p>
+      </footer>
     </div>
   );
 }
