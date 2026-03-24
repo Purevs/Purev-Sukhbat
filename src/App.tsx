@@ -26,7 +26,9 @@ import {
   Download,
   Printer,
   Shield,
-  LogOut
+  LogOut,
+  MessageSquare,
+  Settings
 } from 'lucide-react';
 import { AuthGuard } from './components/AuthGuard';
 import { 
@@ -44,6 +46,7 @@ import {
 import { format, differenceInDays, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays } from 'date-fns';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { motion, AnimatePresence } from 'motion/react';
+import { Toaster, toast } from 'sonner';
 import { Cow, CowDetail, MilkYield, User } from './types';
 import { db, auth, storage } from './firebase';
 import { 
@@ -58,6 +61,9 @@ const cn = (...classes: string[]) => classes.filter(Boolean).join(' ');
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [cowToDelete, setCowToDelete] = useState<Cow | null>(null);
   const [view, setView] = useState<'list' | 'add' | 'detail' | 'scan' | 'landing' | 'reports' | 'admin' | 'forgotPin' | 'forgotPassword' | 'resetPassword' | 'profile' | 'pending'>('pending');
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState('');
@@ -682,21 +688,47 @@ export default function App() {
     }
   };
 
-  const handleDeleteCow = async (id: number) => {
-    if (!confirm('Та энэ үнээг устгахдаа итгэлтэй байна уу?')) return;
+  const handleDeleteCow = (cow: Cow) => {
+    setCowToDelete(cow);
+    setShowDeleteConfirmModal(true);
+  };
+
+  const confirmDeleteCow = async () => {
+    if (!cowToDelete) return;
+    const cow = cowToDelete;
+    setShowDeleteConfirmModal(false);
+    setCowToDelete(null);
     
     const performDelete = async () => {
       try {
-        await deleteDoc(doc(db, 'users', user!.id.toString(), 'cows', id.toString()));
+        await deleteDoc(doc(db, 'users', user!.id.toString(), 'cows', cow.id.toString()));
         fetchCows();
         setView('list');
+        toast.success('Үнээ устгагдлаа', {
+          action: {
+            label: 'Буцаах',
+            onClick: () => undoDeleteCow(cow)
+          }
+        });
       } catch (err) {
         console.error('Failed to delete cow:', err);
+        toast.error('Устгахад алдаа гарлаа');
       }
     };
 
     setOnPinSuccess({ action: performDelete });
     setShowPinModal(true);
+  };
+
+  const undoDeleteCow = async (cow: Cow) => {
+    try {
+      await setDoc(doc(db, 'users', user!.id.toString(), 'cows', cow.id.toString()), cow);
+      fetchCows();
+      toast.success('Үнээ буцаагдлаа');
+    } catch (err) {
+      console.error('Failed to undo delete cow:', err);
+      toast.error('Буцаахад алдаа гарлаа');
+    }
   };
 
   const removeImage = async (imageUrl: string) => {
@@ -872,7 +904,7 @@ export default function App() {
                   <option value="6months">6 сар</option>
                   <option value="1year">1 жил</option>
                 </select>
-                <button onClick={() => approveUser(u.id)} className="bg-[#5A5A40] text-white px-4 py-2 rounded-xl">Батлах</button>
+                <button onClick={() => approveUser(u.id)} className="bg-violet-600 text-white px-4 py-2 rounded-xl">Батлах</button>
               </div>
             </div>
           ))}
@@ -911,7 +943,7 @@ export default function App() {
                       <option value="6months">6 сар</option>
                       <option value="1year">1 жил</option>
                     </select>
-                    <button onClick={() => extendSubscription(u.id, u.subscription_end_date)} className="bg-[#5A5A40] text-white px-2 py-1 rounded-xl text-xs">Сунгах</button>
+                    <button onClick={() => extendSubscription(u.id, u.subscription_end_date)} className="bg-violet-600 text-white px-2 py-1 rounded-xl text-xs">Сунгах</button>
                   </div>
                 )}
               </div>
@@ -928,89 +960,25 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F5F5F0] text-[#141414] font-sans">
-      {/* Header */}
-      <header className="bg-white border-b border-[#141414]/10 sticky top-0 z-10">
+      {/* New Header */}
+      <header className="bg-white border-b border-slate-100 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {view !== 'list' && view !== 'register' && view !== 'userSelect' && view !== 'landing' && (
-              <button 
-                onClick={() => {
-                  setView('list');
-                  setImagePreview([]);
-                }}
-                className="p-2 hover:bg-black/5 rounded-full transition-colors"
-              >
-                <ArrowLeft size={20} />
-              </button>
-            )}
-            <h1 className="text-xl font-bold tracking-tight">
-              {view === 'landing' ? '' :
-               view === 'list' ? (user?.farm_name || 'Фермийн Бүртгэл') : 
-               view === 'add' ? 'Шинэ бүртгэл' : 
-               view === 'detail' ? 'Мэдээлэл' : 
-               view === 'profile' ? 'Профайл' : 'QR Код'}
-            </h1>
+            <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold">
+              {user?.full_name?.charAt(0) || 'U'}
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Welcome</p>
+              <h1 className="text-sm font-bold tracking-tight">{user?.full_name || 'User'}</h1>
+            </div>
           </div>
-          {view === 'list' && user && (
-            <button onClick={() => setView('profile')} className="p-2 hover:bg-black/5 rounded-full transition-colors">
-              <UserIcon size={20} />
-            </button>
-          )}
-          <div className="flex items-center gap-2">
-            {user?.role === 'admin' && view !== 'admin' && (
-              <button onClick={() => setView('admin')} className="p-2 bg-[#5A5A40] text-white rounded-full">
-                Админ
-              </button>
-            )}
-            {view === 'list' && (
-              <>
-                {user?.email === 'purevs@gmail.com' && (
-                  <button 
-                    onClick={() => setView('admin')}
-                    className="p-2 hover:bg-black/5 rounded-full transition-colors text-black/40"
-                    title="Админ"
-                  >
-                    <Shield size={20} />
-                  </button>
-                )}
-                <button 
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-full hover:bg-red-100 transition-colors font-bold text-sm"
-                  title="Гарах"
-                >
-                  <LogOut size={18} />
-                  Гарах
-                </button>
-              </>
-            )}
-            {view === 'reports' && (
-              <div className="flex items-center gap-1">
-                <button 
-                  onClick={downloadCSV}
-                  className="p-2 hover:bg-black/5 rounded-full transition-colors text-black/40"
-                  title="CSV татах"
-                >
-                  <Download size={20} />
-                </button>
-                <button 
-                  onClick={handlePrint}
-                  className="p-2 hover:bg-black/5 rounded-full transition-colors text-black/40"
-                  title="Хэвлэх"
-                >
-                  <Printer size={20} />
-                </button>
-                <button 
-                  onClick={fetchReportData}
-                  className="p-2 hover:bg-black/5 rounded-full transition-colors text-black/40"
-                  title="Шинэчлэх"
-                >
-                  <TrendingUp size={20} />
-                </button>
-              </div>
-            )}
-          </div>
+          <button className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500">
+            <Bell size={20} />
+          </button>
         </div>
       </header>
+      
+
 
       <main className="max-w-2xl mx-auto p-4 pb-24">
         {view === 'admin' && <AuthGuard><AdminView /></AuthGuard>}
@@ -1271,7 +1239,7 @@ export default function App() {
                   )}
                   <button 
                     onClick={() => setLandingTab('login')}
-                    className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98]"
+                    className="w-full bg-violet-600 text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-violet-700 transition-all active:scale-[0.98]"
                   >
                     Нэвтрэх
                   </button>
@@ -2045,7 +2013,7 @@ export default function App() {
                       <Edit2 size={20} />
                     </button>
                     <button 
-                      onClick={() => handleDeleteCow(cowDetail.id)}
+                      onClick={() => handleDeleteCow(cowDetail)}
                       className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
                     >
                       <Trash2 size={20} />
@@ -2654,6 +2622,121 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+      <Toaster position="top-center" />
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirmModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl"
+            >
+              <h2 className="text-lg font-bold mb-4">Үнээ устгах уу?</h2>
+              <p className="text-slate-500 mb-6">Та энэ үнээг устгахдаа итгэлтэй байна уу?</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirmModal(false);
+                    setCowToDelete(null);
+                  }}
+                  className="flex-1 py-3 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-all"
+                >
+                  Болих
+                </button>
+                <button
+                  onClick={confirmDeleteCow}
+                  className="flex-1 bg-red-600 text-white py-3 rounded-2xl font-bold shadow-lg hover:bg-red-700 transition-all"
+                >
+                  Устгах
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Search Modal */}
+      <AnimatePresence>
+        {showSearchModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-white z-50 p-4"
+          >
+            <div className="max-w-2xl mx-auto">
+              <div className="flex items-center gap-4 mb-6">
+                <button onClick={() => setShowSearchModal(false)} className="p-2 text-slate-400">
+                  <ArrowLeft size={24} />
+                </button>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Үнээ хайх..."
+                  className="flex-1 p-3 bg-slate-100 rounded-2xl border-none focus:ring-2 focus:ring-violet-500"
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-2">
+                {filteredCows.map(cow => (
+                  <button
+                    key={cow.id}
+                    onClick={() => {
+                      setShowSearchModal(false);
+                      setCowDetail(cow);
+                      setView('detail');
+                    }}
+                    className="w-full p-4 bg-white border border-slate-100 rounded-2xl flex items-center justify-between hover:bg-slate-50 transition-all"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center font-bold text-slate-500">
+                        {cow.tag_code.slice(-2)}
+                      </div>
+                      <div className="text-left">
+                        <p className="font-bold">Код: {cow.tag_code}</p>
+                        <p className="text-sm text-slate-500">{cow.breed || 'Үүлдэр тодорхойгүй'}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+                {filteredCows.length === 0 && (
+                  <p className="text-center text-slate-400 py-10">Үнээ олдсонгүй</p>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 pb-safe z-20">
+        <div className="max-w-2xl mx-auto flex items-center justify-around p-4">
+          <button onClick={() => setView('list')} className={`p-2 ${view === 'list' ? 'text-violet-600' : 'text-slate-400'}`}>
+            <Home size={24} />
+          </button>
+          <button onClick={() => setShowSearchModal(true)} className="p-2 text-slate-400">
+            <Search size={24} />
+          </button>
+          <button onClick={() => setView('add')} className="p-4 bg-violet-600 text-white rounded-full -mt-10 shadow-lg shadow-violet-200">
+            <Plus size={28} />
+          </button>
+          <button className="p-2 text-slate-400">
+            <MessageSquare size={24} />
+          </button>
+          <button onClick={() => setView('profile')} className={`p-2 ${view === 'profile' ? 'text-violet-600' : 'text-slate-400'}`}>
+            <Settings size={24} />
+          </button>
+        </div>
+      </nav>
     </div>
   );
 }
