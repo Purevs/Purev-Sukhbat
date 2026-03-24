@@ -28,7 +28,9 @@ import {
   Shield,
   LogOut,
   MessageSquare,
-  Settings
+  Settings,
+  Flame,
+  Baby
 } from 'lucide-react';
 import { AuthGuard } from './components/AuthGuard';
 import { 
@@ -1434,42 +1436,54 @@ export default function App() {
                   <h3 className="text-[10px] font-bold uppercase tracking-widest text-black/40 px-1">Шуурхай мэдэгдэл</h3>
                   <div className="space-y-2">
                     {heatAlerts.map(cow => (
-                      <div key={`heat-${cow.id}`} className="bg-amber-50 border border-amber-200 p-4 rounded-3xl flex items-center justify-between">
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        whileHover={{ scale: 1.02 }}
+                        key={`heat-${cow.id}`} 
+                        className="bg-amber-100 border border-amber-300 p-4 rounded-3xl flex items-center justify-between shadow-sm animate-pulse"
+                      >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600">
-                            <Bell size={20} />
+                          <div className="w-10 h-10 bg-amber-200 rounded-2xl flex items-center justify-center text-amber-700">
+                            <Flame size={20} />
                           </div>
                           <div>
-                            <p className="font-bold text-sm">Ороо орох дөхсөн: #{cow.tag_code}</p>
-                            <p className="text-xs text-amber-700/60">{cow.breed}</p>
+                            <p className="font-bold text-sm text-amber-900">Ороо орох дөхсөн: #{cow.tag_code}</p>
+                            <p className="text-xs text-amber-800/70">{cow.breed}</p>
                           </div>
                         </div>
                         <button 
                           onClick={() => fetchCowDetail(cow.id)}
-                          className="text-xs font-bold text-amber-600 hover:underline"
+                          className="text-xs font-bold text-amber-800 hover:underline"
                         >
                           Харах
                         </button>
-                      </div>
+                      </motion.div>
                     ))}
                     {birthAlerts.map(cow => (
-                      <div key={`birth-${cow.id}`} className="bg-blue-50 border border-blue-200 p-4 rounded-3xl flex items-center justify-between">
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        whileHover={{ scale: 1.02 }}
+                        key={`birth-${cow.id}`} 
+                        className="bg-blue-100 border border-blue-300 p-4 rounded-3xl flex items-center justify-between shadow-sm animate-pulse"
+                      >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600">
-                            <Bell size={20} />
+                          <div className="w-10 h-10 bg-blue-200 rounded-2xl flex items-center justify-center text-blue-700">
+                            <Baby size={20} />
                           </div>
                           <div>
-                            <p className="font-bold text-sm">Төрөх дөхсөн: #{cow.tag_code}</p>
-                            <p className="text-xs text-blue-700/60">{cow.breed}</p>
+                            <p className="font-bold text-sm text-blue-900">Төрөх дөхсөн: #{cow.tag_code}</p>
+                            <p className="text-xs text-blue-800/70">{cow.breed}</p>
                           </div>
                         </div>
                         <button 
                           onClick={() => fetchCowDetail(cow.id)}
-                          className="text-xs font-bold text-blue-600 hover:underline"
+                          className="text-xs font-bold text-blue-800 hover:underline"
                         >
                           Харах
                         </button>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 </div>
