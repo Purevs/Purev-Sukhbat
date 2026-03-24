@@ -15,6 +15,7 @@ import {
   Camera,
   AlertCircle,
   Bell,
+  Heart,
   User as UserIcon,
   Home,
   Edit2,
@@ -918,6 +919,11 @@ export default function App() {
             </div>
           ))}
         </section>
+        {/* Footer */}
+        <footer className="p-6 text-center text-black/40 text-xs space-y-1">
+          <p>Утас: 99216051 | Имэйл: info@mpfarm.org</p>
+          <p>© 2026 mpfarm.org. Хуулиар хамгаалагдсан.</p>
+        </footer>
       </div>
     );
   };
@@ -1383,41 +1389,57 @@ export default function App() {
               {(heatAlerts.length > 0 || birthAlerts.length > 0) && (
                 <div className="space-y-3">
                   {heatAlerts.length > 0 && (
-                    <div className="bg-amber-50 border border-amber-200 p-4 rounded-3xl">
-                      <div className="flex items-center gap-2 text-amber-800 font-bold mb-3">
-                        <Bell size={18} />
-                        <span>Ороо орох дөхсөн үнээнүүд</span>
-                      </div>
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-rose-100 border-2 border-rose-300 p-5 rounded-3xl shadow-lg"
+                    >
+                      <motion.div 
+                        animate={{ scale: [1, 1.05, 1] }}
+                        transition={{ repeat: Infinity, duration: 2 }}
+                        className="flex items-center gap-3 text-rose-900 font-bold mb-4"
+                      >
+                        <Heart className="text-rose-600" size={24} />
+                        <span className="text-lg">Ороо орох дөхсөн үнээнүүд</span>
+                      </motion.div>
                       <div className="space-y-2">
                         {heatAlerts.map(cow => (
-                          <div key={cow.id} className="flex items-center justify-between bg-white/50 p-2 rounded-xl text-sm">
-                            <span className="font-bold">#{cow.tag_code} ({cow.breed})</span>
-                            <span className="text-amber-700">Ороо орох мөчлөг</span>
+                          <div key={cow.id} className="flex items-center justify-between bg-white/70 p-3 rounded-2xl text-sm border border-rose-200">
+                            <span className="font-bold text-rose-950">#{cow.tag_code} ({cow.breed})</span>
+                            <span className="text-rose-700 font-medium">Ороо орох мөчлөг</span>
                           </div>
                         ))}
                       </div>
-                    </div>
+                    </motion.div>
                   )}
 
                   {birthAlerts.length > 0 && (
-                    <div className="bg-blue-50 border border-blue-200 p-4 rounded-3xl">
-                      <div className="flex items-center gap-2 text-blue-800 font-bold mb-3">
-                        <Bell size={18} />
-                        <span>Төрөх дөхсөн үнээнүүд</span>
-                      </div>
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-sky-100 border-2 border-sky-300 p-5 rounded-3xl shadow-lg"
+                    >
+                      <motion.div 
+                        animate={{ scale: [1, 1.05, 1] }}
+                        transition={{ repeat: Infinity, duration: 2 }}
+                        className="flex items-center gap-3 text-sky-900 font-bold mb-4"
+                      >
+                        <Calendar className="text-sky-600" size={24} />
+                        <span className="text-lg">Төрөх дөхсөн үнээнүүд</span>
+                      </motion.div>
                       <div className="space-y-2">
                         {birthAlerts.map(cow => {
                           const dueDate = addDays(new Date(cow.insemination_date!), 283);
                           const daysLeft = differenceInDays(dueDate, new Date());
                           return (
-                            <div key={cow.id} className="flex items-center justify-between bg-white/50 p-2 rounded-xl text-sm">
-                              <span className="font-bold">#{cow.tag_code} ({cow.breed})</span>
-                              <span className="text-blue-700">{daysLeft === 0 ? 'Өнөөдөр төрөх' : `${daysLeft} хоногийн дараа`}</span>
+                            <div key={cow.id} className="flex items-center justify-between bg-white/70 p-3 rounded-2xl text-sm border border-sky-200">
+                              <span className="font-bold text-sky-950">#{cow.tag_code} ({cow.breed})</span>
+                              <span className="text-sky-700 font-bold">{daysLeft === 0 ? 'Өнөөдөр төрөх' : `${daysLeft} хоногийн дараа`}</span>
                             </div>
                           );
                         })}
                       </div>
-                    </div>
+                    </motion.div>
                   )}
                 </div>
               )}
