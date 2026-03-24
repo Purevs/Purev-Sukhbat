@@ -58,7 +58,7 @@ const cn = (...classes: string[]) => classes.filter(Boolean).join(' ');
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [view, setView] = useState<'list' | 'add' | 'detail' | 'scan' | 'landing' | 'reports' | 'admin' | 'forgotPin' | 'forgotPassword' | 'resetPassword' | 'pending'>('pending');
+  const [view, setView] = useState<'list' | 'add' | 'detail' | 'scan' | 'landing' | 'reports' | 'admin' | 'forgotPin' | 'forgotPassword' | 'resetPassword' | 'profile' | 'pending'>('pending');
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState('');
   const [landingTab, setLandingTab] = useState<'login' | 'register' | null>(null);
@@ -947,9 +947,15 @@ export default function App() {
               {view === 'landing' ? '' :
                view === 'list' ? (user?.farm_name || 'Фермийн Бүртгэл') : 
                view === 'add' ? 'Шинэ бүртгэл' : 
-               view === 'detail' ? 'Мэдээлэл' : 'QR Код'}
+               view === 'detail' ? 'Мэдээлэл' : 
+               view === 'profile' ? 'Профайл' : 'QR Код'}
             </h1>
           </div>
+          {view === 'list' && user && (
+            <button onClick={() => setView('profile')} className="p-2 hover:bg-black/5 rounded-full transition-colors">
+              <UserIcon size={20} />
+            </button>
+          )}
           <div className="flex items-center gap-2">
             {user?.role === 'admin' && view !== 'admin' && (
               <button onClick={() => setView('admin')} className="p-2 bg-[#5A5A40] text-white rounded-full">
@@ -1008,6 +1014,48 @@ export default function App() {
 
       <main className="max-w-2xl mx-auto p-4 pb-24">
         {view === 'admin' && <AuthGuard><AdminView /></AuthGuard>}
+        {view === 'profile' && user && (
+          <motion.div
+            key="profile"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="max-w-2xl mx-auto p-4"
+          >
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget as HTMLFormElement);
+              const updatedData = {
+                full_name: formData.get('full_name') as string,
+                phone: formData.get('phone') as string,
+                farm_name: formData.get('farm_name') as string,
+              };
+              try {
+                await updateDoc(doc(db, 'users', user.id), updatedData);
+                setUser({ ...user, ...updatedData });
+                setView('list');
+              } catch (err) {
+                console.error('Failed to update profile:', err);
+              }
+            }} className="bg-white p-8 rounded-[40px] shadow-xl border border-[#141414]/5 space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Овог нэр</label>
+                <input name="full_name" defaultValue={user.full_name} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Гар утасны дугаар</label>
+                <input name="phone" type="tel" defaultValue={user.phone} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-black/40 mb-1 ml-1">Фермийн нэр</label>
+                <input name="farm_name" defaultValue={user.farm_name} required className="w-full p-4 bg-[#F5F5F0] rounded-2xl border-none" />
+              </div>
+              <button type="submit" className="w-full bg-[#5A5A40] text-white py-5 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#4A4A30] transition-all active:scale-[0.98] mt-4">
+                Хадгалах
+              </button>
+            </form>
+          </motion.div>
+        )}
         {view === 'pending' && (
           <div className="p-8 text-center bg-white rounded-[40px] shadow-xl border border-[#141414]/5">
             <h2 className="text-xl font-bold mb-2">Таны бүртгэл хараахан батлагдаагүй байна.</h2>
