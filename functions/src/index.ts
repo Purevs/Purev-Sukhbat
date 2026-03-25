@@ -1,14 +1,14 @@
-import * as functions from 'firebase-functions';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import * as admin from 'firebase-admin';
 import sgMail from '@sendgrid/mail';
 
 admin.initializeApp();
 sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
 
-export const sendEmailOnMailCreate = functions.firestore
-  .document('mail/{mailId}')
-  .onCreate(async (snap, context) => {
-    const mailData = snap.data();
+export const sendEmailOnMailCreate = onDocumentCreated('mail/{mailId}', async (event) => {
+  const snap = event.data;
+  if (!snap) return;
+  const mailData = snap.data();
     
     const msg = {
       to: mailData.to,

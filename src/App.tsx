@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import logo from './assets/logo.png';
 import { 
   Plus, 
   Search, 
@@ -1260,7 +1261,7 @@ export default function App() {
             >
               <div className="flex justify-center">
                 <div className="w-20 h-20 bg-[#F5F5F0] rounded-3xl flex items-center justify-center text-[#5A5A40]">
-                  <Home size={40} />
+                  <img src={logo} alt="MP Farm Logo" className="w-full h-full object-contain rounded-3xl" referrerPolicy="no-referrer" />
                 </div>
               </div>
               
