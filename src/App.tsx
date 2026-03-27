@@ -207,6 +207,7 @@ export default function App() {
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (user && !user.is_approved) {
@@ -607,6 +608,7 @@ export default function App() {
     }
     
     try {
+      setIsSubmitting(true);
       console.log('Submitting cow:', data, 'isEditing:', isEditing, 'user.id:', user.id, 'cowDetail:', cowDetail);
       
       // Check for duplicate tag_code if adding a new cow
@@ -615,6 +617,7 @@ export default function App() {
         const snapshot = await getDocs(q);
         if (!snapshot.empty) {
           alert('Энэ ээмэгний дугаартай үхэр бүртгэлтэй байна.');
+          setIsSubmitting(false);
           return;
         }
       }
@@ -634,6 +637,7 @@ export default function App() {
         }
         setIsEditing(false);
         setImagePreview([]);
+        setIsSubmitting(false);
       };
 
       if (isEditing) {
@@ -644,6 +648,7 @@ export default function App() {
       }
     } catch (err) {
       console.error('Failed to submit cow:', err);
+      setIsSubmitting(false);
     }
   };
 
@@ -2028,9 +2033,9 @@ export default function App() {
                       Цуцлах
                     </button>
                   )}
-                  <button type="submit" className="flex-[2] bg-[#5A5A40] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#4A4A30] transition-colors">
+                  <button type="submit" disabled={isSubmitting} className="flex-[2] bg-[#5A5A40] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#4A4A30] transition-colors disabled:opacity-50">
                     <Save size={20} />
-                    {isEditing ? 'Өөрчлөх' : 'Бүртгэх'}
+                    {isSubmitting ? 'Бүртгэж байна...' : (isEditing ? 'Өөрчлөх' : 'Бүртгэх')}
                   </button>
                 </div>
               </form>
