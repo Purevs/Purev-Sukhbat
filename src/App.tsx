@@ -1275,7 +1275,7 @@ export default function App() {
               className="bg-white p-8 rounded-[40px] shadow-xl border border-[#141414]/5 text-center space-y-8"
             >
               <div className="flex justify-center">
-                <div className="w-20 h-20 bg-[#F5F5F0] rounded-3xl flex items-center justify-center text-[#5A5A40]">
+                <div className="w-28 h-28 bg-[#F5F5F0] rounded-3xl flex items-center justify-center text-[#5A5A40]">
                   <img src="/logo.png" alt="MP Farm Logo" className="w-full h-full object-contain rounded-3xl" referrerPolicy="no-referrer" />
                 </div>
               </div>
