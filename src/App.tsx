@@ -460,7 +460,7 @@ export default function App() {
         const newUser = {
           full_name,
           phone,
-          pin,
+          pin_code: pin,
           farm_name,
           email,
           created_at: serverTimestamp(),
