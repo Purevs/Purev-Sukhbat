@@ -498,7 +498,7 @@ export default function App() {
     try {
       const q = query(
         collection(db, 'users', user.id.toString(), 'cows'), 
-        orderBy('created_at', 'desc'),
+        orderBy('tag_code', 'asc'),
         limit(20)
       );
       const querySnapshot = await getDocs(q);
@@ -518,7 +518,7 @@ export default function App() {
     try {
       const q = query(
         collection(db, 'users', user.id.toString(), 'cows'), 
-        orderBy('created_at', 'desc'),
+        orderBy('tag_code', 'asc'),
         startAfter(lastVisible),
         limit(20)
       );
