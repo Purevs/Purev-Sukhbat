@@ -609,6 +609,17 @@ export default function App() {
     
     try {
       console.log('Submitting cow:', data, 'isEditing:', isEditing, 'user.id:', user.id, 'cowDetail:', cowDetail);
+      
+      // Check for duplicate tag_code if adding a new cow
+      if (!isEditing) {
+        const q = query(collection(db, 'users', user.id.toString(), 'cows'), where('tag_code', '==', data.tag_code));
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          alert('Энэ ээмэгний дугаартай үхэр бүртгэлтэй байна.');
+          return;
+        }
+      }
+
       const performSubmit = async () => {
         if (isEditing && cowDetail) {
           console.log('Updating cow:', cowDetail.id);
