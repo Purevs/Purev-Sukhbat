@@ -781,8 +781,8 @@ export default function App() {
       const daysIntoCycle = daysSinceCalving % 21;
       const daysUntilNextHeat = (21 - daysIntoCycle) % 21;
       
-      // Alert if within next 7 days
-      return daysUntilNextHeat <= 7;
+      // Alert if within next 2 days
+      return daysUntilNextHeat <= 2;
     });
   };
 
