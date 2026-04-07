@@ -2219,12 +2219,32 @@ export default function App() {
                           // Group by date and separate by session
                           const grouped = cowDetail.yields.reduce((acc: any, curr) => {
                             const date = curr.date;
-                            if (!acc[date]) acc[date] = { date, morning: 0, evening: 0 };
+                            if (!acc[date]) acc[date] = { date, morning: 0, evening: 0, total: 0 };
                             if (curr.session === 'morning') acc[date].morning += curr.amount;
                             else acc[date].evening += curr.amount;
+                            acc[date].total += curr.amount;
                             return acc;
                           }, {});
-                          return Object.values(grouped).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                          
+                          const sortedData = Object.values(grouped).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                          
+                          // Add standard lactation curve
+                          const calvingDate = cowDetail.last_calving_date ? new Date(cowDetail.last_calving_date) : null;
+                          if (calvingDate) {
+                            sortedData.forEach((item: any) => {
+                              const t = differenceInDays(new Date(item.date), calvingDate);
+                              if (t >= 0 && t <= 305) {
+                                // Wood's model: y(t) = a * t^b * e^(-ct)
+                                const a = 15;
+                                const b = 0.25;
+                                const c = 0.006;
+                                item.standard = a * Math.pow(t, b) * Math.exp(-c * t);
+                              } else {
+                                item.standard = 0;
+                              }
+                            });
+                          }
+                          return sortedData;
                         })()}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
                           <XAxis 
@@ -2235,6 +2255,16 @@ export default function App() {
                           <YAxis tick={{ fontSize: 10 }} />
                           <Tooltip 
                             contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                          />
+                          <Legend />
+                          <Line 
+                            name="Стандарт"
+                            type="monotone" 
+                            dataKey="standard" 
+                            stroke="#CCCCCC" 
+                            strokeWidth={2} 
+                            strokeDasharray="5 5"
+                            dot={false}
                           />
                           <Line 
                             name="Өглөө"
